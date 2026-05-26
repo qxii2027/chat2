@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qx's Chat - Apple Styled Immersive Chatroom</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: [
+                            '-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"',
+                            '"Helvetica Neue"', 'Inter', 'sans-serif'
+                        ],
+                    },
+                    colors: {
+                        apple: {
+                            blue: '#0071E3',
+                            gray: '#1D1D1F',
+                            lightBg: '#F5F5F7',
+                            darkBg: '#000000',
+                            cardLight: 'rgba(255, 255, 255, 0.72)',
+                            cardDark: 'rgba(29, 29, 31, 0.72)',
+                            borderLight: 'rgba(0, 0, 0, 0.08)',
+                            borderDark: 'rgba(255, 255, 255, 0.08)',
+                        }
+                    },
+                    boxShadow: {
+                        'apple': '0 12px 40px rgba(0, 0, 0, 0.04)',
+                        'apple-hover': '0 20px 50px rgba(0, 0, 0, 0.08)',
+                        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.08)'
+                    },
+                    backdropBlur: {
+                        'apple': '20px',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 极致丝滑的 Apple 风格过渡动画 */
+        .page-transition {
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        .fade-enter {
+            opacity: 0;
+            transform: scale(0.97) translateY(8px);
+        }
+
+        /* 隐藏滚动条但保留滚动功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .no-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .no-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 999px;
+        }
+        .dark .no-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 液态玻璃拟物效果 */
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.65);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: inset 0 1px 1px rgba(255,255,255,0.4), 0 10px 30px rgba(0,0,0,0.03);
+        }
+        
+        .dark .liquid-glass {
+            background: rgba(20, 20, 22, 0.75);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 0px rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* iMessage 气泡拟真与尾翼微调 */
+        .bubble-mine {
+            background: linear-gradient(135deg, #057dfa 0%, #0071E3 100%);
+            color: white;
+            border-radius: 20px 20px 4px 20px;
+            position: relative;
+        }
+        .bubble-other {
+            background: #E9E9EB;
+            color: #1D1D1F;
+            border-radius: 20px 20px 20px 4px;
+            position: relative;
+        }
+        .dark .bubble-other {
+            background: #262629;
+            color: #F5F5F7;
+        }
+
+        /* Apple 官网标志性渐变字 */
+        .apple-gradient-text {
+            background: linear-gradient(135deg, #1D1D1F 0%, #6E6E73 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dark .apple-gradient-text {
+            background: linear-gradient(135deg, #FFFFFF 0%, #86868B 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 输入框聚焦时的平滑阴影 */
+        .apple-input {
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        .apple-input:focus {
+            box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+            border-color: #0071E3;
+        }
+    </style>
+</head>
+<body class="bg-apple-lightBg dark:bg-apple-darkBg text-apple-gray dark:text-gray-200 min-h-screen overflow-x-hidden font-sans transition-colors duration-500">
+
+    <!-- 顶部微型通知横幅 -->
+    <div id="topBanner" class="bg-[#0071E3] text-white py-2 px-4 text-center text-xs font-medium tracking-wide relative flex justify-between items-center z-50 shadow-sm transition-all duration-500">
+        <div class="flex-1 text-center flex items-center justify-center gap-2">
+            <span class="inline-block w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+            <span id="bannerText">欢迎来到全新改版的 Qx's Chat！更流畅，更安全，已升级全新安全机制与导航管理器。</span>
+        </div>
+        <button onclick="dismissBanner()" class="text-white/80 hover:text-white transition-colors duration-200">
+            <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+    </div>
+
+    <!-- Apple 胶囊式主导航栏 -->
+    <header class="max-w-6xl mx-auto px-4 pt-4 sticky top-2 z-40 transition-all duration-300">
+        <div class="liquid-glass rounded-full px-6 py-3.5 flex items-center justify-between shadow-apple border border-white/40 dark:border-white/10">
+            <!-- 标志性 Apple 风格 Logo 及其名称 -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('chat')">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0071E3] via-[#4096ff] to-[#e6f4ff] flex items-center justify-center shadow-md border border-white/40 relative overflow-hidden">
+                    <div class="absolute inset-0 bg-white/20 backdrop-blur-[2px]"></div>
+                    <i data-lucide="message-circle" class="w-5 h-5 text-white z-10 relative"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight text-apple-gray dark:text-white flex items-center gap-1.5">
+                        Qx's Chat
+                        <span class="text-[9px] bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-1.5 py-0.5 rounded-full font-semibold">v3.1 Secure</span>
+                    </h1>
+                </div>
+            </div>
+
+            <!-- 中间主导航 (仅在已登录时可见) -->
+            <nav id="mainNav" class="hidden md:flex items-center space-x-1">
+                <button onclick="switchTab('chat')" id="nav-chat" class="px-4 py-1.5 rounded-full text-xs font-medium text-apple-blue bg-white/80 dark:bg-white/10 shadow-sm transition-all duration-300">
+                    <span class="flex items-center gap-1"><i data-lucide="message-square" class="w-3.5 h-3.5"></i> 聊天大厅</span>
+                </button>
+                <button onclick="switchTab('nav')" id="nav-nav" class="px-4 py-1.5 rounded-full text-xs font-medium text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300">
+                    <span class="flex items-center gap-1"><i data-lucide="compass" class="w-3.5 h-3.5"></i> 快捷导航</span>
+                </button>
+                <button onclick="openAnnouncements()" class="px-4 py-1.5 rounded-full text-xs font-medium text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300">
+                    <span class="flex items-center gap-1"><i data-lucide="megaphone" class="w-3.5 h-3.5"></i> 站内公告</span>
+                </button>
+                <button onclick="switchTab('admin')" id="nav-admin" class="px-4 py-1.5 rounded-full text-xs font-medium text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300">
+                    <span class="flex items-center gap-1 text-amber-600 dark:text-amber-400"><i data-lucide="shield-alert" class="w-3.5 h-3.5"></i> 管理后台</span>
+                </button>
+            </nav>
+
+            <!-- 右侧控制区 -->
+            <div class="flex items-center space-x-3">
+                <!-- 切换夜间模式 -->
+                <button onclick="toggleDarkMode()" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/10 transition-all duration-300 text-gray-600 dark:text-gray-300" title="切换深色模式">
+                    <i id="themeIcon" data-lucide="sun" class="w-4 h-4"></i>
+                </button>
+                <!-- 个人中心/状态 -->
+                <div id="userBadge" class="hidden items-center space-x-2 bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-full border border-black/5 dark:border-white/5">
+                    <div class="w-5 h-5 rounded-full bg-apple-blue text-white flex items-center justify-center text-[10px] font-bold overflow-hidden" id="badgeAvatar">U</div>
+                    <span class="text-xs font-medium max-w-[80px] truncate" id="badgeUsername">访客</span>
+                    <button onclick="logout()" class="text-rose-500 hover:text-rose-600 transition-colors duration-200" title="登出">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主容器 -->
+    <main class="max-w-6xl mx-auto px-4 py-6">
+
+        <!-- ==================== 1. 登录注册页面 ==================== -->
+        <section id="page-auth" class="page-transition max-w-md mx-auto my-12">
+            <div class="liquid-glass rounded-[32px] p-8 md:p-10 shadow-apple border border-white/60 dark:border-white/10 text-center">
+                <!-- 尊贵 Logo -->
+                <div class="w-20 h-20 rounded-[22px] bg-gradient-to-tr from-[#0071E3] to-[#e6f4ff] flex items-center justify-center shadow-lg border border-white/50 mx-auto mb-6 relative">
+                    <div class="absolute inset-0 bg-white/10 backdrop-blur-[1px]"></div>
+                    <i data-lucide="message-circle" class="w-10 h-10 text-white animate-pulse"></i>
+                </div>
+                
+                <h2 class="text-3xl font-bold tracking-tight text-apple-gray dark:text-white mb-2">Qx's Chat</h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-8 max-w-xs mx-auto">使用 Apple 官网极致美学重构的即时通讯 center</p>
+
+                <!-- 表单选项卡 -->
+                <div class="bg-black/5 dark:bg-white/5 p-1 rounded-full flex mb-6">
+                    <button id="tab-login" onclick="toggleAuthMode('login')" class="flex-1 py-2 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 shadow-sm transition-all duration-300 text-apple-gray dark:text-white">
+                        账户登录
+                    </button>
+                    <button id="tab-register" onclick="toggleAuthMode('register')" class="flex-1 py-2 rounded-full text-xs font-semibold text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300">
+                        新设账户
+                    </button>
+                </div>
+
+                <!-- 认证表单 -->
+                <form id="authForm" onsubmit="handleAuthSubmit(event)" class="space-y-4 text-left">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 ml-2">账户名称</label>
+                        <input type="text" id="authUsername" required placeholder="请输入您的专属代号" class="w-full px-4 py-3 bg-white/50 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-2xl text-sm apple-input outline-none text-apple-gray dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 ml-2">通讯密码</label>
+                        <input type="password" id="authPassword" required placeholder="请输入登录安全钥匙" class="w-full px-4 py-3 bg-white/50 dark:bg-zinc-900/50 border border-black/10 dark:border-white/10 rounded-2xl text-sm apple-input outline-none text-apple-gray dark:text-white">
+                    </div>
+                    
+                    <button type="submit" id="authBtn" class="w-full py-3.5 bg-apple-blue hover:bg-blue-600 text-white rounded-2xl text-sm font-semibold tracking-wide transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] shadow-md shadow-blue-500/10 mt-6">
+                        即刻进入
+                    </button>
+                </form>
+
+                <!-- 底注说明 -->
+                <p class="text-[10px] text-gray-400 dark:text-gray-500 mt-6">我们采用极致存储压缩策略，您存储的数据轻量且无痕。</p>
+            </div>
+        </section>
+
+
+        <!-- ==================== 2. 主聊天大厅页面 ==================== -->
+        <section id="page-chat" class="page-transition hidden grid grid-cols-1 lg:grid-cols-12 gap-6 my-4">
+            
+            <!-- 2.1 左侧边栏：会话列表与群组 (占 4/12 宽度) -->
+            <div class="lg:col-span-4 flex flex-col space-y-4">
+                
+                <!-- 个人中心 & 头像自定义配置区 -->
+                <div class="liquid-glass rounded-[24px] p-5 shadow-apple border border-white/50 dark:border-white/10">
+                    <div class="flex items-center justify-between mb-4">
+                        <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider font-mono">My Account Status</span>
+                        <div class="flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                            <span class="text-[11px] font-medium text-emerald-500">在线</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <div id="userAvatar" onclick="openEditAvatarModal()" class="w-12 h-12 rounded-full bg-gradient-to-tr from-purple-500 to-[#0071E3] text-white font-bold flex items-center justify-center text-sm shadow-inner shadow-black/10 cursor-pointer overflow-hidden border-2 border-white dark:border-zinc-800 hover:scale-105 transition-transform" title="点击自定义我的个性头像">U</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center space-x-1">
+                                <h3 id="userName" class="font-bold text-sm text-apple-gray dark:text-white truncate">代号玩家</h3>
+                                <button onclick="openEditAvatarModal()" class="text-[#0071E3] hover:text-blue-600 transition-colors"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                            <p class="text-xs text-gray-400 dark:text-gray-500 truncate mt-0.5" id="userRole">常规访客</p>
+                        </div>
+                    </div>
+
+                    <!-- 快捷操作栏 -->
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-black/5 dark:border-white/5">
+                        <button onclick="openApplyGroupModal()" class="py-2 px-3 bg-[#0071E3]/5 hover:bg-[#0071E3]/10 dark:bg-white/5 dark:hover:bg-white/10 text-[#0071E3] dark:text-blue-400 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i> 申请建群
+                        </button>
+                        <button onclick="toggleZenMode()" id="zenBtn" class="py-2 px-3 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-gray-600 dark:text-gray-300 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                            <i data-lucide="eye-off" class="w-3.5 h-3.5"></i> 专注模式
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 会话频道 选择器 -->
+                <div class="liquid-glass rounded-[24px] p-4 shadow-apple flex-1 flex flex-col min-h-[420px] max-h-[580px] border border-white/50 dark:border-white/10">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider font-mono">iMessage Conversations</span>
+                        <span class="text-[10px] bg-black/5 dark:bg-white/10 text-gray-500 dark:text-gray-300 px-2 py-0.5 rounded-full font-medium" id="onlineUserCount">正在同步...</span>
+                    </div>
+
+                    <!-- 搜索场景 -->
+                    <div class="relative mb-3">
+                        <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" id="sessionSearch" oninput="filterSessions()" placeholder="搜索聊天室或好友" class="w-full pl-9 pr-4 py-2 bg-black/5 dark:bg-white/5 border border-transparent rounded-xl text-xs outline-none focus:bg-white dark:focus:bg-zinc-900 border-black/5 dark:border-white/5 transition-all">
+                    </div>
+
+                    <!-- 分类选项卡 -->
+                    <div class="flex space-x-1 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg mb-3">
+                        <button onclick="setSessionFilter('all')" id="sf-all" class="flex-1 py-1 text-[10px] font-bold rounded bg-white dark:bg-zinc-800 text-apple-gray dark:text-white shadow-sm transition-all">全部</button>
+                        <button onclick="setSessionFilter('group')" id="sf-group" class="flex-1 py-1 text-[10px] font-bold text-gray-500 transition-all">群组</button>
+                        <button onclick="setSessionFilter('direct')" id="sf-direct" class="flex-1 py-1 text-[10px] font-bold text-gray-500 transition-all">私信</button>
+                    </div>
+
+                    <!-- 会话渲染列表 -->
+                    <div id="sessionContainer" class="flex-1 overflow-y-auto space-y-1.5 pr-1 no-scrollbar">
+                        <!-- 动态载入列表 -->
+                        <div class="text-center py-8 text-gray-400 text-xs">正在载入频道...</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 2.2 右侧聊天区域 -->
+            <div class="lg:col-span-8 flex flex-col h-[700px] liquid-glass rounded-[24px] overflow-hidden border border-white/50 dark:border-white/10 shadow-apple" id="chatArea">
+                <!-- 聊天窗口头部 (原生 iMessage 风格) -->
+                <div class="px-6 py-4 border-b border-black/5 dark:border-white/5 flex flex-col items-center justify-center bg-white/40 dark:bg-black/15 relative">
+                    
+                    <!-- 顶右侧实用工具 -->
+                    <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                        <!-- 局部搜索 -->
+                        <button onclick="toggleChatSearch()" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 transition-all text-gray-500" title="在当前聊天中搜索消息">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </button>
+                        <!-- 清屏按钮 -->
+                        <button onclick="triggerSecureAction('clear_chat')" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-rose-500/10 hover:text-rose-500 text-gray-500 transition-all" title="清空本地聊天视野">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+
+                    <!-- 居中头像与名称组合 -->
+                    <div class="flex flex-col items-center text-center space-y-1">
+                        <div id="activeChatAvatar" class="w-11 h-11 rounded-full bg-[#0071E3] text-white font-semibold flex items-center justify-center text-sm shadow-md overflow-hidden border border-white/50 dark:border-zinc-800 select-none">
+                            Q
+                        </div>
+                        <div class="flex items-center space-x-1.5">
+                            <h3 id="activeChatName" class="font-bold text-xs text-apple-gray dark:text-white tracking-tight">全局聊天大厅</h3>
+                            <span id="activeChatBadge" class="text-[8px] font-bold bg-[#0071E3]/10 text-[#0071E3] dark:text-blue-400 px-1.5 py-0.2 rounded-full uppercase tracking-wider">Lobby</span>
+                        </div>
+                        <p id="activeChatDesc" class="text-[10px] text-gray-400 dark:text-gray-500 truncate max-w-[280px] md:max-w-md">这是大家的温馨沟通家园，请遵守本站言论规范。</p>
+                    </div>
+                </div>
+
+                <!-- 消息内局部搜索工具条 -->
+                <div id="chatSearchBox" class="hidden px-6 py-2 bg-black/5 dark:bg-white/5 border-b border-black/5 dark:border-white/5 flex items-center space-x-2 transition-all duration-300">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="chatSearchInput" oninput="handleChatSearch()" placeholder="实时过滤消息历史..." class="flex-1 bg-transparent border-none text-xs outline-none text-apple-gray dark:text-white">
+                    <button onclick="toggleChatSearch()" class="text-xs text-gray-400 hover:text-apple-gray dark:hover:text-white font-medium">关闭</button>
+                </div>
+
+                <!-- 聊天消息承载流 -->
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-6 space-y-4 no-scrollbar bg-white/10 dark:bg-black/5">
+                    <!-- 消息气泡动态占位 -->
+                    <div class="flex flex-col items-center justify-center h-full text-center space-y-2">
+                        <div class="w-12 h-12 rounded-full border-2 border-dashed border-gray-300 dark:border-zinc-700 border-t-blue-500 animate-spin"></div>
+                        <p class="text-xs text-gray-400">正在与 Supabase 保持高速同步...</p>
+                    </div>
+                </div>
+
+                <!-- 辅助实用工具条 -->
+                <div class="px-4 py-2 bg-black/5 dark:bg-black/20 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
+                    <div class="flex items-center space-x-2 overflow-x-auto no-scrollbar py-1">
+                        <!-- 表情快捷键 -->
+                        <div class="relative">
+                            <button onclick="toggleEmojiPicker()" class="px-2.5 py-1 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-gray-500 dark:text-gray-400 rounded-lg flex items-center gap-1 transition-all">
+                                <span>😀</span> 表情
+                            </button>
+                            <!-- 表情气泡悬浮窗 -->
+                            <div id="emojiPicker" class="hidden absolute bottom-8 left-0 liquid-glass p-2.5 rounded-xl shadow-lg border border-white/40 grid grid-cols-6 gap-1 w-44 z-50">
+                                <button onclick="insertEmoji('👍')" class="text-lg hover:scale-125 transition-transform">👍</button>
+                                <button onclick="insertEmoji('❤️')" class="text-lg hover:scale-125 transition-transform">❤️</button>
+                                <button onclick="insertEmoji('👏')" class="text-lg hover:scale-125 transition-transform">👏</button>
+                                <button onclick="insertEmoji('😂')" class="text-lg hover:scale-125 transition-transform">😂</button>
+                                <button onclick="insertEmoji('🔥')" class="text-lg hover:scale-125 transition-transform">🔥</button>
+                                <button onclick="insertEmoji('✨')" class="text-lg hover:scale-125 transition-transform">✨</button>
+                                <button onclick="insertEmoji('💡')" class="text-lg hover:scale-125 transition-transform">💡</button>
+                                <button onclick="insertEmoji('💯')" class="text-lg hover:scale-125 transition-transform">💯</button>
+                                <button onclick="insertEmoji('🤔')" class="text-lg hover:scale-125 transition-transform">🤔</button>
+                                <button onclick="insertEmoji('🎉')" class="text-lg hover:scale-125 transition-transform">🎉</button>
+                                <button onclick="insertEmoji('👑')" class="text-lg hover:scale-125 transition-transform">👑</button>
+                                <button onclick="insertEmoji('🤫')" class="text-lg hover:scale-125 transition-transform">🤫</button>
+                            </div>
+                        </div>
+
+                        <!-- 图片发送器 -->
+                        <button onclick="openImageModal()" class="px-2.5 py-1 hover:bg-black/5 dark:hover:bg-white/5 text-xs text-gray-500 dark:text-gray-400 rounded-lg flex items-center gap-1 transition-all">
+                            <i data-lucide="image" class="w-3.5 h-3.5 text-blue-500"></i> 图片
+                        </button>
+
+                        <!-- 常用捷径 -->
+                        <button onclick="insertQuickMessage('👍 收到，非常感谢！')" class="px-2.5 py-1 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-[10px] text-gray-500 dark:text-gray-400 rounded-lg transition-all">
+                            "收到"
+                        </button>
+                        <button onclick="insertQuickMessage('⏰ 请问这件事情稍后处理方便吗？')" class="px-2.5 py-1 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-[10px] text-gray-500 dark:text-gray-400 rounded-lg transition-all">
+                            "稍后"
+                        </button>
+                        <button onclick="insertQuickMessage('😮 太震撼了，Qx\'s Chat 好美！')" class="px-2.5 py-1 bg-black/5 hover:bg-black/10 dark:bg-white/5 dark:hover:bg-white/10 text-[10px] text-gray-500 dark:text-gray-400 rounded-lg transition-all">
+                            "赞叹"
+                        </button>
+                    </div>
+                    
+                    <div class="text-[10px] text-gray-400 flex items-center gap-1 select-none font-mono">
+                        <i data-lucide="shield-check" class="w-3 h-3 text-emerald-500"></i>
+                        <span>End-to-End Encryption</span>
+                    </div>
+                </div>
+
+                <!-- 聊天底栏输入组件 -->
+                <div class="p-4 bg-white/20 dark:bg-zinc-900/20 border-t border-black/5 dark:border-white/5">
+                    <form id="messageForm" onsubmit="handleSendMessage(event)" class="flex items-end space-x-2">
+                        <textarea id="messageInput" rows="1" onkeydown="handleTextAreaKeydown(event)" placeholder="发送给本频道的加密聊天信息..." class="flex-1 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-2xl px-4 py-3 text-sm apple-input outline-none resize-none max-h-24 min-h-[44px] text-apple-gray dark:text-white no-scrollbar"></textarea>
+                        
+                        <button type="submit" class="w-11 h-11 rounded-full bg-apple-blue hover:bg-blue-600 text-white flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 shadow-md shadow-blue-500/10">
+                            <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ==================== 3. 苹果风格极简网址导航页面 ==================== -->
+        <section id="page-nav" class="page-transition hidden max-w-4xl mx-auto my-6">
+            <div class="text-center mb-10">
+                <h2 class="text-4xl font-extrabold tracking-tight apple-gradient-text select-none">Qx's 极客导航</h2>
+                <p class="text-sm text-gray-500 mt-2 select-none">管理员动态配置的内定精选快捷通路</p>
+            </div>
+
+            <!-- 分类与列表展示 -->
+            <div class="space-y-8" id="navCategories">
+                <!-- 由 JS 载入 -->
+                <div class="text-center py-12 text-gray-400 text-sm">正在加载精选网址...</div>
+            </div>
+
+            <!-- 管理员新增/编辑 网址入口，仅在管理员登录时显示 -->
+            <div id="adminNavEditor" class="hidden mt-12 p-6 liquid-glass rounded-[24px] border border-amber-500/20 shadow-lg">
+                <h3 class="font-bold text-amber-600 dark:text-amber-400 text-sm mb-4 flex items-center gap-2 select-none">
+                    <i data-lucide="plus" class="w-4 h-4"></i> <span id="navEditorTitle">管理员高级操作：在此添加本站专用导航</span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input type="text" id="addNavName" placeholder="网址名称" class="px-3 py-2.5 bg-white dark:bg-zinc-900 border rounded-xl text-xs outline-none apple-input text-apple-gray dark:text-white">
+                    <input type="text" id="addNavUrl" placeholder="URL 链接 (以 http 开头)" class="px-3 py-2.5 bg-white dark:bg-zinc-900 border rounded-xl text-xs outline-none apple-input text-apple-gray dark:text-white">
+                    <input type="text" id="addNavCat" placeholder="类别 (如：生产力/科技)" class="px-3 py-2.5 bg-white dark:bg-zinc-900 border rounded-xl text-xs outline-none apple-input text-apple-gray dark:text-white">
+                    <div class="flex gap-2">
+                        <button onclick="saveNavigationItem()" id="saveNavBtn" class="flex-1 py-2.5 bg-[#0071E3] text-white rounded-xl text-xs font-semibold hover:bg-blue-600 transition-all">快速录入</button>
+                        <button onclick="resetNavEditor()" id="cancelNavEditBtn" class="hidden py-2.5 bg-gray-500 text-white rounded-xl text-xs font-semibold hover:bg-gray-600 transition-all">取消编辑</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ==================== 4. 管理员总后台页面 ==================== -->
+        <section id="page-admin" class="page-transition hidden max-w-5xl mx-auto my-6">
+            <!-- 密码输入屏 (如果没有解锁) -->
+            <div id="adminAuthLock" class="max-w-md mx-auto p-8 liquid-glass rounded-[32px] text-center border border-amber-500/15">
+                <i data-lucide="shield-check" class="w-12 h-12 text-amber-500 mx-auto mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">安全防护：进入 Qx's 终极控制权</h2>
+                <p class="text-xs text-gray-400 mb-6 font-mono">别试了，试不出来的</p>
+                
+                <div class="space-y-4">
+                    <input type="password" id="adminPwdInput" placeholder="请输入高级解锁口令" class="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-black/10 dark:border-white/10 rounded-2xl text-center text-sm outline-none apple-input">
+                    <button onclick="verifyAdminPassword()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-xs font-bold transition-all transform hover:scale-[1.01]">
+                        验证凭证
+                    </button>
+                </div>
+            </div>
+
+            <!-- 真正的管理面板 -->
+            <div id="adminPanel" class="hidden space-y-8">
+                <div class="liquid-glass rounded-[28px] p-6 border border-amber-500/20 shadow-md">
+                    <div class="flex items-center justify-between mb-6 pb-4 border-b border-black/5 dark:border-white/5">
+                        <div>
+                            <span class="text-xs bg-amber-500/10 text-amber-500 font-bold px-2.5 py-0.5 rounded-full uppercase">管理员专区</span>
+                            <h2 class="text-2xl font-bold mt-1 text-apple-gray dark:text-white">高阶决策控制塔</h2>
+                        </div>
+                        <button onclick="exitAdminMode()" class="px-4 py-1.5 bg-rose-500/10 hover:bg-rose-500 text-rose-500 hover:text-white transition-all rounded-full text-xs font-semibold">
+                            锁定退出
+                        </button>
+                    </div>
+
+                    <!-- 三大核心管理标签页导航 -->
+                    <div class="flex space-x-2 border-b border-black/5 dark:border-white/5 pb-4 mb-6">
+                        <button onclick="setAdminSubTab('users')" id="ast-users" class="px-4 py-2 text-xs font-semibold bg-amber-500 text-white rounded-xl shadow-sm transition-all">
+                            用户账户管理
+                        </button>
+                        <button onclick="setAdminSubTab('groups')" id="ast-groups" class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 rounded-xl transition-all">
+                            群组许可审批
+                        </button>
+                        <button onclick="setAdminSubTab('system')" id="ast-system" class="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 rounded-xl transition-all">
+                            系统与公告发布
+                        </button>
+                    </div>
+
+                    <!-- 子栏目 1：注册用户中心 -->
+                    <div id="sub-admin-users" class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-400">目前注册在案的用户</span>
+                            <span class="text-[11px] text-[#0071E3] font-medium" id="adminUserCountText">0 个活跃名额</span>
+                        </div>
+                        <div class="overflow-x-auto font-mono">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-black/5 dark:border-white/5 text-gray-400">
+                                        <th class="py-3 px-2">ID/标识</th>
+                                        <th class="py-3 px-2">账户名</th>
+                                        <th class="py-3 px-2">密码原文</th>
+                                        <th class="py-3 px-2">注册时间</th>
+                                        <th class="py-3 px-2 text-right">管理操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminUserTableBody">
+                                    <!-- JS 渲染 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 子栏目 2：群组及审批中心 -->
+                    <div id="sub-admin-groups" class="hidden space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-gray-400">群组列表及建群申请审核</span>
+                            <span id="adminPendingGroupText" class="text-xs text-amber-500 font-medium">0 项未审批</span>
+                        </div>
+                        <div class="overflow-x-auto font-mono">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-black/5 dark:border-white/5 text-gray-400">
+                                        <th class="py-3 px-2">群组名称</th>
+                                        <th class="py-3 px-2">建群发起人</th>
+                                        <th class="py-3 px-2">群组描述</th>
+                                        <th class="py-3 px-2">状态</th>
+                                        <th class="py-3 px-2 text-right">一键操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminGroupTableBody">
+                                    <!-- JS 渲染 -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- 子栏目 3：系统状态及公告发布 -->
+                    <div id="sub-admin-system" class="hidden space-y-6">
+                        <!-- 第一版：公告内容发布器 -->
+                        <div class="p-5 bg-white/20 dark:bg-zinc-900/40 rounded-2xl border border-black/5 dark:border-white/5">
+                            <h3 class="font-bold text-sm mb-3">发布新站内大喇叭公告</h3>
+                            <div class="space-y-4">
+                                <textarea id="adminAnnounceText" rows="3" placeholder="写点系统维护须知..." class="w-full p-3 bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 rounded-xl text-xs outline-none"></textarea>
+                                <div class="flex justify-between items-center">
+                                    <label class="flex items-center space-x-2 text-xs cursor-pointer">
+                                        <input type="checkbox" id="syncToBanner" class="rounded text-[#0071E3] w-4.5 h-4.5">
+                                        <span>同时同步至顶部横幅公告栏</span>
+                                    </label>
+                                    <button onclick="publishAnnouncement()" class="px-5 py-2 bg-amber-500 text-white rounded-xl text-xs font-bold transition-all">
+                                        立即广播公告
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 存储容量优化工具 -->
+                        <div class="p-5 bg-stone-500/5 dark:bg-white/5 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700">
+                            <h3 class="font-bold text-sm mb-1 text-amber-500">500MB 云存储自清洗与预警</h3>
+                            <p class="text-[11px] text-gray-400 mb-4">系统已配置策略：常规会话仅留存最新1000条，私信留存最新400条消息。存储使用情况完全可控。</p>
+                            
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="triggerSecureAction('force_prune')" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                                    <i data-lucide="scissors" class="w-3.5 h-3.5"></i> 立即强制对多余会话进行物理裁剪
+                                </button>
+                                <button onclick="triggerSecureAction('force_reset')" class="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5">
+                                    <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i> 一键物理清空聊天记录
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== 5. 安全及功能模态弹窗 (Modals) ==================== -->
+
+    <!-- 自定义安全确认模态窗口 (代替原生的 confirm/alert 弹窗) -->
+    <div id="modalConfirm" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="liquid-glass rounded-[28px] max-w-sm w-full p-6 border border-white/50 dark:border-white/10 shadow-apple animate-in fade-in zoom-in duration-300">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center">
+                    <i data-lucide="shield-alert" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-base text-apple-gray dark:text-white" id="confirmTitle">安全确认</h3>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-6" id="confirmMessage">此操作不可撤销，请进行二次验证核对。</p>
+            
+            <!-- 用于危险管理操作的二次防错口令框 -->
+            <div id="confirmSecretInputContainer" class="hidden mb-4">
+                <label class="block text-[10px] font-bold text-gray-400 mb-1" id="confirmSecretLabel">输入验证内容</label>
+                <input type="text" id="confirmSecretInput" class="w-full px-3 py-2 bg-black/5 dark:bg-white/5 border border-black/10 rounded-xl text-xs outline-none text-apple-gray dark:text-white" placeholder="">
+            </div>
+
+            <div class="flex space-x-2">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 bg-black/5 dark:bg-white/5 text-gray-500 text-xs font-semibold rounded-xl hover:bg-black/10 transition-colors">
+                    取消操作
+                </button>
+                <button id="confirmExecuteBtn" class="flex-1 py-2.5 bg-rose-500 text-white text-xs font-semibold rounded-xl hover:bg-rose-600 transition-colors">
+                    确定执行
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义头像设置弹窗 (Modal Avatar) -->
+    <div id="modalEditAvatar" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="liquid-glass rounded-[28px] max-w-md w-full p-6 border border-white/50 dark:border-white/10 shadow-apple animate-in fade-in zoom-in duration-300">
+            <h3 class="font-bold text-lg mb-2 text-apple-gray dark:text-white flex items-center gap-2 select-none">
+                <i data-lucide="smile" class="text-blue-500 w-5 h-5"></i> 自定义我的 iMessage 头像
+            </h3>
+            <p class="text-xs text-gray-400 mb-4 select-none">您可以选择我们提供的高级 Emoji 底色、也可以通过外链或上传本地头像深度定制您的聊天标志。</p>
+            
+            <div class="space-y-4">
+                <!-- 预设 Emoji 头像组合选择 -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-2 ml-1 select-none">选择精心设计的预设拟物头像</label>
+                    <div class="grid grid-cols-6 gap-2" id="presetAvatarGrid">
+                        <!-- JS 自动初始化 12 款精美拟物底色组合 -->
+                    </div>
+                </div>
+
+                <!-- 手写外链 URL -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1 select-none">自定义网络头像 URL</label>
+                    <input type="url" id="customAvatarUrlInput" placeholder="https://example.com/avatar.png" class="w-full px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl text-xs outline-none text-apple-gray dark:text-white apple-input">
+                </div>
+
+                <!-- 本地照片选择并极致微缩 -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1 select-none">上传我的本地私人头像文件</label>
+                    <div id="avatarDragArea" class="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-3 text-center cursor-pointer hover:border-blue-500 hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                        <i data-lucide="camera" class="w-5 h-5 mx-auto text-gray-400 mb-0.5"></i>
+                        <p class="text-[9px] text-gray-400">选择照片，系统会自动裁剪并进行超微压缩保护隐私。</p>
+                        <input type="file" id="avatarFileInput" accept="image/*" class="hidden" onchange="handleAvatarFileSelected(event)">
+                    </div>
+                </div>
+
+                <!-- 当前预览 -->
+                <div class="flex items-center space-x-3 bg-black/5 dark:bg-white/5 p-3 rounded-xl">
+                    <div id="avatarPreviewCircle" class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white shadow-md overflow-hidden select-none">U</div>
+                    <div>
+                        <span class="text-xs font-bold text-apple-gray dark:text-white">实时头像预览</span>
+                        <p class="text-[9px] text-gray-400">这就是大家将会看到的头像效果</p>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="closeEditAvatarModal()" class="flex-1 py-2.5 bg-black/5 dark:bg-white/5 text-gray-500 text-xs font-semibold rounded-xl">
+                        放弃修改
+                    </button>
+                    <button onclick="saveCustomAvatar()" class="flex-1 py-2.5 bg-apple-blue text-white text-xs font-semibold rounded-xl hover:bg-blue-600 transition-colors">
+                        保存并同步
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal A: 申请建群弹窗 -->
+    <div id="modalApplyGroup" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="liquid-glass rounded-[28px] max-w-sm w-full p-6 border border-white/50 dark:border-white/10 shadow-apple animate-in fade-in zoom-in duration-300">
+            <h3 class="font-bold text-lg mb-2 text-apple-gray dark:text-white flex items-center gap-2">
+                <i data-lucide="plus-square" class="text-blue-500 w-5 h-5"></i> 提请新建群组
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">为了良好的聊天秩序，您建立的新群组需要等待最高管理员审批通过后方能开启。</p>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1">拟定群聊名称</label>
+                    <input type="text" id="groupNameInput" placeholder="请输入群组名字" class="w-full px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl text-xs outline-none apple-input text-apple-gray dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1">群聊宗旨描述</label>
+                    <textarea id="groupDescInput" rows="2" placeholder="说说这个群是用来交流什么的？" class="w-full px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl text-xs outline-none apple-input text-apple-gray dark:text-white"></textarea>
+                </div>
+                
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="closeApplyGroupModal()" class="flex-1 py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 text-gray-500 text-xs font-semibold rounded-xl">
+                        放弃取消
+                    </button>
+                    <button onclick="submitGroupApplication()" class="flex-1 py-2.5 bg-[#0071E3] text-white text-xs font-semibold rounded-xl">
+                        提请审核
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal B: 发送图片弹窗 -->
+    <div id="modalSendImage" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="liquid-glass rounded-[28px] max-w-sm w-full p-6 border border-white/50 dark:border-white/10 shadow-apple animate-in fade-in zoom-in duration-300">
+            <h3 class="font-bold text-lg mb-2 text-apple-gray dark:text-white flex items-center gap-2">
+                <i data-lucide="image" class="text-emerald-500 w-5 h-5"></i> 分享图片资源
+            </h3>
+            <p class="text-xs text-gray-400 mb-4">输入网络图片直链，或者拖入/上传一张本地图片。</p>
+            
+            <div class="space-y-4">
+                <!-- 网络图片URL -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1">方式 A：填入网络图片 URL</label>
+                    <input type="url" id="imageUrlInput" placeholder="https://example.com/pic.png" class="w-full px-3.5 py-2.5 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/5 rounded-xl text-xs outline-none text-apple-gray dark:text-white">
+                </div>
+                <!-- 本地拖入/上传 -->
+                <div>
+                    <label class="block text-[11px] font-semibold text-gray-400 mb-1 ml-1">方式 B：选择本地图片文件</label>
+                    <div id="dragArea" class="border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl p-4 text-center cursor-pointer hover:border-blue-500 hover:bg-black/5 dark:hover:bg-white/5 transition-all">
+                        <i data-lucide="cloud-lightning" class="w-6 h-6 mx-auto text-gray-400 mb-1"></i>
+                        <p class="text-[10px] text-gray-400">点击此处或拖拽图片到这里，系统会自动对其进行 150KB 极致超微尺寸压缩。</p>
+                        <input type="file" id="imageFileInput" accept="image/*" class="hidden" onchange="handleFileSelected(event)">
+                    </div>
+                    <div id="imagePreviewContainer" class="hidden mt-2 border rounded-lg overflow-hidden relative max-h-[140px] flex justify-center">
+                        <img id="compressedPreview" src="" class="max-h-full max-w-full object-contain">
+                        <button onclick="cancelFilePreview()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600">
+                            <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 pt-2">
+                    <button onclick="closeImageModal()" class="flex-1 py-2.5 bg-black/5 dark:bg-white/5 text-gray-500 text-xs font-semibold rounded-xl">
+                        取消
+                    </button>
+                    <button onclick="sendPreparedImage()" class="flex-1 py-2.5 bg-[#0071E3] text-white text-xs font-semibold rounded-xl">
+                        立即上云发布
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal C: 公告大喇叭弹窗 -->
+    <div id="modalAnnouncements" class="hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="liquid-glass rounded-[28px] max-w-md w-full p-6 border border-white/50 dark:border-white/10 shadow-apple animate-in fade-in zoom-in duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-lg text-apple-gray dark:text-white flex items-center gap-2">
+                    <i data-lucide="bell" class="text-amber-500 w-5 h-5 animate-bounce"></i> 站内广播 center
+                </h3>
+                <button onclick="closeAnnouncements()" class="w-7 h-7 hover:bg-black/10 dark:hover:bg-white/10 rounded-full flex items-center justify-center text-gray-500 transition-colors">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div id="announcementContainer" class="space-y-3 max-h-[320px] overflow-y-auto no-scrollbar pr-1">
+                <!-- 动态载入公告 -->
+                <div class="text-center py-8 text-gray-400 text-xs">暂无最新公告</div>
+            </div>
+
+            <div class="pt-4 border-t border-black/5 dark:border-white/5 flex justify-end">
+                <p class="text-[9px] text-gray-400">公告仅支持管理员发布 | Qx's Chat 安全广播</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10大实用功能常驻托盘区 -->
+    <div class="max-w-6xl mx-auto px-4 pb-12 mt-6">
+        <div class="liquid-glass rounded-[28px] p-6 shadow-apple border border-white/50 dark:border-white/10">
+            <h3 class="font-bold text-sm text-apple-gray dark:text-white mb-4 flex items-center gap-1.5 select-none">
+                <i data-lucide="layers" class="w-4.5 h-4.5 text-purple-500"></i>
+                <span>Qx's 精心研发：10个实用功能托盘（完全对称布局）</span>
+            </h3>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                <button onclick="toggleDarkMode()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="moon" class="w-5 h-5 text-indigo-500 mb-1"></i>
+                    <span class="text-[10px] font-bold">iMessage 昼夜模式</span>
+                </button>
+                <button onclick="openImageModal()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="sparkles" class="w-5 h-5 text-emerald-500 mb-1"></i>
+                    <span class="text-[10px] font-bold">图片智能微压器</span>
+                </button>
+                <button onclick="switchTab('nav')" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="compass" class="w-5 h-5 text-[#0071E3] mb-1"></i>
+                    <span class="text-[10px] font-bold">快捷极客导航</span>
+                </button>
+                <button onclick="openAnnouncements()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="megaphone" class="w-5 h-5 text-amber-500 mb-1"></i>
+                    <span class="text-[10px] font-bold">查看站内广播</span>
+                </button>
+                <button onclick="testPingSpeed()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="activity" class="w-5 h-5 text-cyan-500 mb-1"></i>
+                    <span class="text-[10px] font-bold" id="pingSpeedText">极速同步检测</span>
+                </button>
+                <button onclick="toggleAudio()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="volume-2" id="soundIcon" class="w-5 h-5 text-fuchsia-500 mb-1"></i>
+                    <span class="text-[10px] font-bold" id="soundText">来信音效: 开启</span>
+                </button>
+                <button onclick="showChatStats()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-rose-500 mb-1"></i>
+                    <span class="text-[10px] font-bold">个人下榻统计</span>
+                </button>
+                <button onclick="toggleScratchpad()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center relative">
+                    <i data-lucide="pencil" class="w-5 h-5 text-amber-600 mb-1"></i>
+                    <span class="text-[10px] font-bold">极简个人便签</span>
+                </button>
+                <button onclick="triggerSecureAction('clean_logs')" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="refresh-cw" class="w-5 h-5 text-zinc-500 mb-1"></i>
+                    <span class="text-[10px] font-bold">清空本地配置</span>
+                </button>
+                <button onclick="toggleZenMode()" class="p-3 bg-white dark:bg-zinc-900 rounded-2xl text-center border hover:shadow-sm hover:scale-[1.02] transition-all flex flex-col items-center justify-center">
+                    <i data-lucide="eye" class="w-5 h-5 text-blue-400 mb-1"></i>
+                    <span class="text-[10px] font-bold">专注视域屏蔽</span>
+                </button>
+            </div>
+
+            <!-- 便签展开面板 -->
+            <div id="scratchpadArea" class="hidden mt-4 p-4 bg-amber-500/10 dark:bg-amber-500/5 rounded-2xl border border-amber-500/20 transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-amber-600 dark:text-amber-400">📝 智能备忘（离线自动保存至本地）</span>
+                    <button onclick="toggleScratchpad()" class="text-xs text-gray-400 hover:text-gray-600">收起</button>
+                </div>
+                <textarea id="scratchpadContent" oninput="saveScratchpad()" rows="3" placeholder="写点临时草稿，只有您自己能看见..." class="w-full p-3 bg-white dark:bg-zinc-950 border border-amber-500/20 rounded-xl text-xs outline-none text-apple-gray dark:text-white"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="text-center pb-12 text-xs text-gray-400 dark:text-gray-500 mt-12 select-none">
+        <p class="font-semibold text-gray-500 dark:text-zinc-400">&copy; 2026 Qx's Chat Inc. All rights reserved.</p>
+        <p class="mt-1">由高级液态毛玻璃与 Supabase 独家呈现极佳体验。</p>
+    </footer>
+
+    <!-- 音效播放器 -->
+    <audio id="imessageAudio" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav" preload="auto"></audio>
+
+    <!-- 浮动 Toast 提示容器 -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-12 opacity-0 transition-all duration-300 liquid-glass rounded-2xl px-5 py-3 border border-emerald-500/20 shadow-md flex items-center space-x-2 pointer-events-none">
+        <i data-lucide="info" id="toastIcon" class="w-4.5 h-4.5 text-emerald-500"></i>
+        <span id="toastMsg" class="text-xs font-semibold">操作成功</span>
+    </div>
+
+    <script>
+        // ==================== 0. 全局变量与配置 ====================
+        const SUPABASE_URL = "https://rdimbwiatcpeexpdozpf.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_xQCt1KtTkCDzZcWvpqTZZA_kgQn2F_z";
+        
+        let currentUser = null; 
+        let currentTab = 'auth'; 
+        let currentAdminTab = 'users'; 
+        let sessionFilter = 'all'; 
+        
+        let selectedSessionId = 'lobby'; 
+        let sessions = []; 
+        let messages = []; 
+        let users = [];    
+        let groups = [];   
+        let announcements = []; 
+        let navigationItems = []; 
+        
+        let updateTimer = null;
+        let isZenMode = false;
+        let audioNotificationEnabled = true;
+        let activeAdminLocked = true; 
+        let searchKeyword = '';
+        let globalSearchKeyword = '';
+
+        let tempSelectedAvatarData = "";
+        
+        // 优化连接速度：记录上一次低频同步（元数据）的时间戳
+        let lastMetaSyncTime = 0;
+
+        // 导航编辑控制变量
+        let editingNavId = null;
+
+        // 安全确认回调
+        let confirmSuccessCallback = null;
+        
+        const MSG_LIMIT_PUBLIC = 1000;
+        const MSG_LIMIT_DM = 400;
+
+        const PRESET_EMOJIS = [
+            { emoji: "🦊", bg: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)" },
+            { emoji: "🐹", bg: "linear-gradient(135deg, #f6d365 0%, #fda085 100%)" },
+            { emoji: "🐸", bg: "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)" },
+            { emoji: "🐙", bg: "linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)" },
+            { emoji: "🦁", bg: "linear-gradient(135deg, #fddb92 0%, #d1f2ff 100%)" },
+            { emoji: "🐨", bg: "linear-gradient(135deg, #96fbc4 0%, #f9f586 100%)" },
+            { emoji: "🎈", bg: "linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%)" },
+            { emoji: "🎨", bg: "linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%)" },
+            { emoji: "🚀", bg: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" },
+            { emoji: "🥑", bg: "linear-gradient(135deg, #13547a 0%, #80d0c7 100%)" },
+            { emoji: "👾", bg: "linear-gradient(135deg, #b3ffab 10%, #12fff7 90%)" },
+            { emoji: "👻", bg: "linear-gradient(135deg, #ffc3a0 0%, #ffafbd 100%)" }
+        ];
+
+        // 安全 HTML 实体转义处理器 (防 XSS)
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // 简易 URL 表达式安全校验 (自适应非标准协议输入)
+        function isValidURL(string) {
+            let urlString = string.trim();
+            if (!/^https?:\/\//i.test(urlString)) {
+                urlString = "http://" + urlString;
+            }
+            try {
+                if (urlString.toLowerCase().startsWith("javascript:") || urlString.toLowerCase().startsWith("data:")) {
+                    return false;
+                }
+                new URL(urlString);
+                return true;
+            } catch (_) {
+                return false;  
+            }
+        }
+
+        // ==================== 额外修复：核心关键函数提升（Hoisting Ensure） ====================
+        // 在最前端定义此函数，确保 switchTab() 随时可以无缝引用到
+        function scrollChatToBottom() {
+            const chatContainer = document.getElementById('chatMessages');
+            if (chatContainer) {
+                chatContainer.scrollTo({
+                    top: chatContainer.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // ==================== 1. 系统生命周期初始化 ====================
+        window.onload = async function() {
+            lucide.createIcons();
+            initPresetAvatarGrid();
+            
+            if(localStorage.getItem('qx_scratchpad')) {
+                document.getElementById('scratchpadContent').value = localStorage.getItem('qx_scratchpad');
+            }
+            if(localStorage.getItem('qx_sound_enabled') !== null) {
+                audioNotificationEnabled = localStorage.getItem('qx_sound_enabled') === 'true';
+                updateSoundUI();
+            }
+
+            const savedUser = localStorage.getItem('qx_current_user');
+            if(savedUser) {
+                currentUser = JSON.parse(savedUser);
+                updateUserBadge();
+                switchTab('chat');
+                showToast("欢迎回来，" + escapeHTML(currentUser.username));
+            } else {
+                switchTab('auth');
+            }
+
+            startSyncLoop();
+        };
+
+        function initPresetAvatarGrid() {
+            const grid = document.getElementById('presetAvatarGrid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            PRESET_EMOJIS.forEach((item, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = "w-10 h-10 rounded-full flex items-center justify-center text-lg shadow hover:scale-110 active:scale-95 transition-transform border border-white dark:border-zinc-700";
+                btn.style.background = item.bg;
+                btn.innerText = item.emoji;
+                btn.onclick = () => selectPresetAvatar(item);
+                grid.appendChild(btn);
+            });
+        }
+
+        // ==================== 2. Supabase 基础 API ====================
+        async function supabaseRequest(endpoint, options = {}) {
+            const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+            const headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": `Bearer ${SUPABASE_KEY}`,
+                "Content-Type": "application/json",
+                "Prefer": "return=representation"
+            };
+
+            const config = {
+                ...options,
+                headers: {
+                    ...headers,
+                    ...(options.headers || {})
+                }
+            };
+
+            try {
+                const response = await fetch(url, config);
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`HTTP error ${response.status}: ${errText}`);
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error("Supabase API 通信有误:", error);
+                return null;
+            }
+        }
+
+        // ==================== 3. 动态同步轮询 ====================
+        function startSyncLoop() {
+            if (updateTimer) clearInterval(updateTimer);
+            updateTimer = setInterval(async () => {
+                if (currentUser) {
+                    await syncCoreData();
+                }
+            }, 1800);
+
+            if (currentUser) {
+                syncCoreData();
+            }
+        }
+
+        async function syncCoreData() {
+            try {
+                const now = Date.now();
+                // 优化：用户列表、群组、导航、公告属于低频变动数据，每 10.8 秒拉取一次。而聊天消息保持极速刷新。
+                const shouldSyncMeta = (now - lastMetaSyncTime) > 10800 || users.length === 0;
+
+                // 优化：仅拉取最新 150 条消息作为高频同步，大幅减少数据库运算负担、网络吞吐以及 JSON 解析时间
+                const msgPromise = supabaseRequest("qx_messages?order=created_at.desc&limit=150", { method: "GET" });
+                
+                let promises = [msgPromise];
+                if (shouldSyncMeta) {
+                    promises.push(supabaseRequest("qx_users?order=username.asc", { method: "GET" }));
+                    promises.push(supabaseRequest("qx_groups?order=created_at.desc", { method: "GET" }));
+                    promises.push(supabaseRequest("qx_navigation?order=category.asc", { method: "GET" }));
+                    promises.push(supabaseRequest("qx_announcements?order=created_at.desc&limit=5", { method: "GET" }));
+                }
+
+                const results = await Promise.all(promises);
+                const msgData = results[0];
+
+                if (shouldSyncMeta) {
+                    if (results[1]) {
+                        users = results[1];
+                        const updatedSelf = users.find(u => u.id === currentUser.id);
+                        if (updatedSelf && JSON.stringify(updatedSelf) !== JSON.stringify(currentUser)) {
+                            currentUser = updatedSelf;
+                            localStorage.setItem('qx_current_user', JSON.stringify(currentUser));
+                            updateUserBadge();
+                        }
+                    }
+                    if (results[2]) groups = results[2];
+                    if (results[3]) navigationItems = results[3];
+                    if (results[4]) {
+                        announcements = results[4];
+                        if (announcements.length > 0) {
+                            const bannerTextEl = document.getElementById('bannerText');
+                            if (bannerTextEl) bannerTextEl.innerText = announcements[0].content;
+                        }
+                    }
+                    lastMetaSyncTime = now;
+                }
+
+                if (msgData) {
+                    const sortedMsgs = msgData.reverse();
+                    if (messages.length > 0 && sortedMsgs.length > messages.length) {
+                        const latestMsg = sortedMsgs[sortedMsgs.length - 1];
+                        if (latestMsg.sender_name !== currentUser.username) {
+                            playIncomingAudio();
+                        }
+                    }
+                    messages = sortedMsgs;
+                }
+
+                renderSessionsList();
+                renderMessagesStream();
+                renderNavigation();
+                
+                if (!activeAdminLocked) {
+                    renderAdminTableUsers();
+                    renderAdminTableGroups();
+                }
+
+                const onlineUserCountEl = document.getElementById('onlineUserCount');
+                if (onlineUserCountEl) onlineUserCountEl.innerText = `${users.length} 个活跃成员`;
+            } catch (err) {
+                console.warn("同步握手抖动:", err);
+            }
+        }
+
+        // ==================== 4. 账户安全认证 ====================
+        let authMode = 'login'; 
+
+        function toggleAuthMode(mode) {
+            const btnLogin = document.getElementById('tab-login');
+            const btnReg = document.getElementById('tab-register');
+            const btnSubmit = document.getElementById('authBtn');
+            authMode = mode;
+
+            if(mode === 'login') {
+                if (btnLogin) btnLogin.className = "flex-1 py-2 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 shadow-sm transition-all duration-300 text-apple-gray dark:text-white";
+                if (btnReg) btnReg.className = "flex-1 py-2 rounded-full text-xs font-semibold text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300";
+                if (btnSubmit) btnSubmit.innerText = "即刻进入";
+            } else {
+                if (btnReg) btnReg.className = "flex-1 py-2 rounded-full text-xs font-semibold bg-white dark:bg-zinc-800 shadow-sm transition-all duration-300 text-apple-gray dark:text-white";
+                if (btnLogin) btnLogin.className = "flex-1 py-2 rounded-full text-xs font-semibold text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300";
+                if (btnSubmit) btnSubmit.innerText = "完成注册并进入";
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+
+            if(!username || !password) {
+                showToast("账号密码均不可留空", "error");
+                return;
+            }
+
+            if (username.length > 15 || /[^a-zA-Z0-9_\u4e00-\u9fa5]/.test(username)) {
+                showToast("昵称限长 15 字符，且不能包含特殊符号", "error");
+                return;
+            }
+
+            if(authMode === 'login') {
+                const matchUsers = await supabaseRequest(`qx_users?username=eq.${encodeURIComponent(username)}`, { method: "GET" });
+                if (matchUsers && matchUsers.length > 0) {
+                    const user = matchUsers[0];
+                    if (user.password === password) {
+                        loginAs(user);
+                    } else {
+                        showToast("通信密码不匹配", "error");
+                    }
+                } else {
+                    showToast("账户名称不存，请先注册新设账户", "error");
+                }
+            } else {
+                const matchUsers = await supabaseRequest(`qx_users?username=eq.${encodeURIComponent(username)}`, { method: "GET" });
+                if (matchUsers && matchUsers.length > 0) {
+                    showToast("该昵称已被使用", "error");
+                } else {
+                    const isSysAdmin = (username === "qxii2026") ? "admin" : "user";
+                    const newUser = {
+                        username: username,
+                        password: password,
+                        role: isSysAdmin,
+                        avatar_url: "", 
+                        created_at: new Date().toISOString()
+                    };
+
+                    const result = await supabaseRequest("qx_users", {
+                        method: "POST",
+                        body: JSON.stringify(newUser)
+                    });
+
+                    if (result) {
+                        showToast("账户注册创建大功告成！");
+                        const fetchUser = await supabaseRequest(`qx_users?username=eq.${encodeURIComponent(username)}`, { method: "GET" });
+                        if(fetchUser && fetchUser.length > 0) {
+                            loginAs(fetchUser[0]);
+                        }
+                    } else {
+                        showToast("建立账户遇到了限制", "error");
+                    }
+                }
+            }
+        }
+
+        function loginAs(userObj) {
+            currentUser = userObj;
+            localStorage.setItem('qx_current_user', JSON.stringify(userObj));
+            updateUserBadge();
+            switchTab('chat');
+            syncCoreData();
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('qx_current_user');
+            const userBadge = document.getElementById('userBadge');
+            if (userBadge) userBadge.className = "hidden";
+            switchTab('auth');
+            showToast("您已成功从 Qx's Chat 安全注销");
+        }
+
+        function renderAvatarElement(targetEl, avatarUrl, defaultText) {
+            if (!targetEl) return;
+            if (avatarUrl && avatarUrl.trim() !== "") {
+                if (avatarUrl.startsWith("emoji:")) {
+                    const parts = avatarUrl.split("|");
+                    const emoji = parts[0].replace("emoji:", "");
+                    const bg = parts[1] || "gray";
+                    targetEl.style.background = bg;
+                    targetEl.style.backgroundImage = "none";
+                    targetEl.innerHTML = `<span class="text-xl select-none">${emoji}</span>`;
+                } else {
+                    const cleanUrl = escapeHTML(avatarUrl);
+                    targetEl.style.backgroundImage = `url('${cleanUrl}')`;
+                    targetEl.style.backgroundSize = "cover";
+                    targetEl.style.backgroundPosition = "center";
+                    targetEl.innerHTML = "";
+                }
+            } else {
+                targetEl.style.background = "linear-gradient(135deg, #057dfa 0%, #0071E3 100%)";
+                targetEl.style.backgroundImage = "none";
+                targetEl.innerHTML = `<span class="text-xs text-white uppercase">${escapeHTML(defaultText)}</span>`;
+            }
+        }
+
+        function updateUserBadge() {
+            if (!currentUser) return;
+            const userBadge = document.getElementById('userBadge');
+            const badgeAvatar = document.getElementById('badgeAvatar');
+            const badgeUsername = document.getElementById('badgeUsername');
+            
+            if (userBadge) userBadge.className = "flex items-center space-x-2 bg-black/5 dark:bg-white/10 px-3 py-1.5 rounded-full border border-black/5 dark:border-white/5";
+            if (badgeAvatar) renderAvatarElement(badgeAvatar, currentUser.avatar_url, currentUser.username.substring(0, 2));
+            if (badgeUsername) badgeUsername.innerText = currentUser.username;
+
+            const userAvatarEl = document.getElementById('userAvatar');
+            const userNameEl = document.getElementById('userName');
+            const userRoleEl = document.getElementById('userRole');
+
+            if (userAvatarEl) renderAvatarElement(userAvatarEl, currentUser.avatar_url, currentUser.username.substring(0, 2));
+            if (userNameEl) userNameEl.innerText = currentUser.username;
+            if (userRoleEl) userRoleEl.innerText = currentUser.role === 'admin' ? "最高总领治理员" : "特许通讯访客";
+            
+            const adminNavEditorEl = document.getElementById('adminNavEditor');
+            if (adminNavEditorEl) {
+                if (currentUser.role === 'admin') {
+                    adminNavEditorEl.className = "mt-12 p-6 liquid-glass rounded-[24px] border border-amber-500/20 shadow-lg";
+                } else {
+                    adminNavEditorEl.className = "hidden";
+                }
+            }
+        }
+
+        // ==================== 5. 会话面板 ====================
+        function setSessionFilter(type) {
+            sessionFilter = type;
+            const btns = ['all', 'group', 'direct'];
+            btns.forEach(b => {
+                const el = document.getElementById(`sf-${b}`);
+                if (el) {
+                    if (b === type) {
+                        el.className = "flex-1 py-1 text-[10px] font-bold rounded bg-white dark:bg-zinc-800 text-apple-gray dark:text-white shadow-sm transition-all";
+                    } else {
+                        el.className = "flex-1 py-1 text-[10px] font-bold text-gray-500 transition-all";
+                    }
+                }
+            });
+            renderSessionsList();
+        }
+
+        function filterSessions() {
+            const sessionSearchEl = document.getElementById('sessionSearch');
+            if (sessionSearchEl) {
+                globalSearchKeyword = sessionSearchEl.value.toLowerCase().trim();
+            }
+            renderSessionsList();
+        }
+
+        function renderSessionsList() {
+            const container = document.getElementById('sessionContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (sessionFilter === 'all' || sessionFilter === 'group') {
+                const isSelected = selectedSessionId === 'lobby';
+                if (!globalSearchKeyword || "全局聊天大厅".includes(globalSearchKeyword)) {
+                    container.appendChild(createSessionCard('lobby', '全局大厅', '公共畅聊区', 'lobby', isSelected, 'emoji:📢|linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)'));
+                }
+            }
+
+            const approvedGroups = groups.filter(g => g.is_approved === true);
+            approvedGroups.forEach(g => {
+                if (sessionFilter === 'all' || sessionFilter === 'group') {
+                    if (globalSearchKeyword && !g.name.toLowerCase().includes(globalSearchKeyword)) return;
+                    const isSelected = selectedSessionId === `group_${g.id}`;
+                    container.appendChild(createSessionCard(`group_${g.id}`, g.name, g.description || '无群群组', 'group', isSelected, 'emoji:👥|linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)'));
+                }
+            });
+
+            const otherUsers = users.filter(u => u.username !== currentUser.username);
+            otherUsers.forEach(u => {
+                if (sessionFilter === 'all' || sessionFilter === 'direct') {
+                    if (globalSearchKeyword && !u.username.toLowerCase().includes(globalSearchKeyword)) return;
+                    const isSelected = selectedSessionId === `dm_${u.id}`;
+                    container.appendChild(createSessionCard(`dm_${u.id}`, u.username, u.role === 'admin' ? '系统管理员' : '在线联系人', 'direct', isSelected, u.avatar_url));
+                }
+            });
+        }
+
+        function createSessionCard(id, name, desc, type, isSelected, avatarUrl) {
+            const card = document.createElement('div');
+            let bgClass = "hover:bg-black/5 dark:hover:bg-white/5";
+            let activeIndicator = "";
+            let textClass = "text-apple-gray dark:text-zinc-200";
+            
+            if (isSelected) {
+                bgClass = "bg-[#0071E3] hover:bg-[#0071E3] text-white";
+                textClass = "text-white";
+                activeIndicator = "border-l-4 border-white";
+            }
+
+            card.className = `p-3.5 rounded-2xl flex items-center space-x-3 cursor-pointer transition-all duration-300 ${bgClass} ${activeIndicator} relative overflow-hidden`;
+            card.onclick = () => selectSession(id, name, desc, type, avatarUrl);
+
+            const avatarDivId = `session-avatar-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
+
+            const safeName = escapeHTML(name);
+            const safeDesc = escapeHTML(desc);
+
+            card.innerHTML = `
+                <div id="${avatarDivId}" class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs select-none shadow-sm overflow-hidden border border-white/20">
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold text-xs ${textClass} truncate">${safeName}</span>
+                        <span class="text-[9px] opacity-75">${type === 'direct' ? '私聊' : '群组'}</span>
+                    </div>
+                    <p class="text-[10px] opacity-80 truncate mt-0.5 ${textClass}">${safeDesc}</p>
+                </div>
+            `;
+
+            setTimeout(() => {
+                const targetEl = document.getElementById(avatarDivId);
+                if(targetEl) {
+                    renderAvatarElement(targetEl, avatarUrl, name.substring(0, 2));
+                }
+            }, 0);
+
+            return card;
+        }
+
+        function selectSession(id, name, desc, type, avatarUrl) {
+            selectedSessionId = id;
+            const avatar = document.getElementById('activeChatAvatar');
+            const title = document.getElementById('activeChatName');
+            const badge = document.getElementById('activeChatBadge');
+            const info = document.getElementById('activeChatDesc');
+
+            if (title) title.innerText = name;
+            if (info) info.innerText = desc;
+            
+            if (avatar) renderAvatarElement(avatar, avatarUrl, name.substring(0,2));
+
+            if (badge) {
+                if (type === 'lobby') {
+                    badge.className = "text-[8px] font-bold bg-[#0071E3]/10 text-[#0071E3] dark:text-blue-400 px-1.5 py-0.2 rounded-full uppercase tracking-wider";
+                    badge.innerText = "Lobby";
+                } else if (type === 'group') {
+                    badge.className = "text-[8px] font-bold bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 px-1.5 py-0.2 rounded-full uppercase tracking-wider";
+                    badge.innerText = "Group";
+                } else {
+                    badge.className = "text-[8px] font-bold bg-purple-500/10 text-purple-500 dark:text-purple-400 px-1.5 py-0.2 rounded-full uppercase tracking-wider";
+                    badge.innerText = "Direct";
+                }
+            }
+
+            const chatStream = document.getElementById('chatMessages');
+            if (chatStream) {
+                chatStream.classList.add('fade-enter');
+                setTimeout(() => {
+                    chatStream.classList.remove('fade-enter');
+                }, 300);
+            }
+            
+            renderSessionsList();
+            renderMessagesStream();
+        }
+
+        // ==================== 6. 消息流渲染 ====================
+        function renderMessagesStream() {
+            const chatContainer = document.getElementById('chatMessages');
+            if (!chatContainer) return;
+            chatContainer.innerHTML = '';
+
+            let filtered = [];
+
+            if (selectedSessionId === 'lobby') {
+                filtered = messages.filter(m => !m.group_id && !m.receiver_id);
+            } else if (selectedSessionId.startsWith('group_')) {
+                const gid = selectedSessionId.replace('group_', '');
+                filtered = messages.filter(m => String(m.group_id) === gid);
+            } else if (selectedSessionId.startsWith('dm_')) {
+                const targetUid = selectedSessionId.replace('dm_', '');
+                filtered = messages.filter(m => 
+                    (String(m.sender_id) === String(currentUser.id) && String(m.receiver_id) === targetUid) ||
+                    (String(m.sender_id) === targetUid && String(m.receiver_id) === String(currentUser.id))
+                );
+            }
+
+            if (searchKeyword) {
+                filtered = filtered.filter(m => m.content.toLowerCase().includes(searchKeyword));
+            }
+
+            if (filtered.length === 0) {
+                chatContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-center py-12">
+                        <i data-lucide="message-square-dashed" class="w-12 h-12 text-gray-300 dark:text-zinc-700 mb-2"></i>
+                        <p class="text-xs text-gray-400">当前对话尚无记录。快来发送第一条消息吧！</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            filtered.forEach(m => {
+                const isMine = String(m.sender_id) === String(currentUser.id);
+                const bubble = document.createElement('div');
+                bubble.className = `flex ${isMine ? 'justify-end' : 'justify-start'} items-end space-x-2 mb-4 animate-in fade-in slide-in-from-bottom-2 duration-300`;
+
+                const senderUser = users.find(u => u.username === m.sender_name);
+                const senderAvatarUrl = senderUser ? senderUser.avatar_url : "";
+
+                let adminControls = "";
+                if (currentUser.role === 'admin') {
+                    adminControls = `
+                        <div class="flex items-center space-x-1 opacity-0 hover:opacity-100 transition-opacity ml-2">
+                            <button onclick="editMessageAdmin('${m.id}', '${encodeURIComponent(m.content)}')" class="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded text-gray-400 hover:text-blue-500" title="修改内容">
+                                <i data-lucide="edit-3" class="w-3 h-3"></i>
+                            </button>
+                            <button onclick="triggerSecureAction('delete_message', '${m.id}')" class="p-1 hover:bg-black/5 dark:hover:bg-white/10 rounded text-gray-400 hover:text-rose-500" title="撤回删除">
+                                <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                const avatarDivId = `bubble-avatar-${m.id}`;
+                const avatarLetter = m.sender_name.substring(0, 2).toUpperCase();
+                const bubbleBg = isMine ? 'bubble-mine shadow-md shadow-blue-500/15' : 'bubble-other shadow-sm';
+                const timeStr = m.created_at ? new Date(m.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '刚刚';
+
+                let renderedContent = "";
+                if (m.is_image) {
+                    const cleanImgUrl = escapeHTML(m.content);
+                    renderedContent = `<img src="${cleanImgUrl}" class="max-w-[200px] sm:max-w-xs rounded-xl cursor-pointer hover:scale-[1.01] transition-transform shadow-inner" onclick="window.open('${cleanImgUrl}')">`;
+                } else {
+                    renderedContent = escapeHTML(m.content).replace(/\n/g, '<br>');
+                }
+
+                const safeSenderName = escapeHTML(m.sender_name);
+
+                if (isMine) {
+                    bubble.innerHTML = `
+                        ${adminControls}
+                        <div class="flex flex-col items-end max-w-[70%]">
+                            <span class="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">${safeSenderName} · ${timeStr}</span>
+                            <div class="px-4 py-2.5 text-xs ${bubbleBg}">
+                                ${renderedContent}
+                            </div>
+                        </div>
+                        <div id="${avatarDivId}" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] shadow-sm select-none overflow-hidden">
+                        </div>
+                    `;
+                } else {
+                    bubble.innerHTML = `
+                        <div id="${avatarDivId}" class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-[10px] shadow-sm select-none overflow-hidden">
+                        </div>
+                        <div class="flex flex-col items-start max-w-[70%]">
+                            <span class="text-[9px] text-gray-400 dark:text-gray-500 mb-0.5">${safeSenderName} · ${timeStr}</span>
+                            <div class="px-4 py-2.5 text-xs ${bubbleBg}">
+                                ${renderedContent}
+                            </div>
+                        </div>
+                        ${adminControls}
+                    `;
+                }
+
+                chatContainer.appendChild(bubble);
+
+                setTimeout(() => {
+                    const targetEl = document.getElementById(avatarDivId);
+                    if (targetEl) {
+                        renderAvatarElement(targetEl, senderAvatarUrl, avatarLetter);
+                    }
+                }, 0);
+            });
+
+            lucide.createIcons();
+            scrollChatToBottom();
+        }
+
+        // ==================== 自定义安全确认模态 (替代 confirm) ====================
+        function triggerSecureAction(actionType, param1 = null, param2 = null) {
+            const modal = document.getElementById('modalConfirm');
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const secretContainer = document.getElementById('confirmSecretInputContainer');
+            const secretInput = document.getElementById('confirmSecretInput');
+            const executeBtn = document.getElementById('confirmExecuteBtn');
+
+            if (!modal || !title || !message || !secretContainer || !secretInput || !executeBtn) return;
+
+            secretContainer.classList.add('hidden');
+            secretInput.value = '';
+
+            if (actionType === 'clear_chat') {
+                title.innerText = "清空本地视野";
+                message.innerText = "此操作只会安全清空您当前的本地浏览器渲染，不会抹除 Supabase 云端服务器的数据，确定继续吗？";
+                confirmSuccessCallback = () => {
+                    const chatMessagesEl = document.getElementById('chatMessages');
+                    if (chatMessagesEl) {
+                        chatMessagesEl.innerHTML = `
+                            <div class="flex flex-col items-center justify-center h-full text-center py-12">
+                                <i data-lucide="eye-off" class="w-12 h-12 text-gray-300 dark:text-zinc-700 mb-2"></i>
+                                <p class="text-xs text-gray-400">已清理当前聊天视野历史 (不影响云端数据)</p>
+                            </div>
+                        `;
+                    }
+                    lucide.createIcons();
+                    showToast("本地视野已清空");
+                };
+            } else if (actionType === 'clean_logs') {
+                title.innerText = "清空本地配置";
+                message.innerText = "您即将注销并重置该设备上所有保存在本地的缓存信息（包含便签），确认重置页面吗？";
+                confirmSuccessCallback = () => {
+                    localStorage.clear();
+                    showToast("重置成功，页面即将刷新...");
+                    setTimeout(() => { window.location.reload(); }, 1200);
+                };
+            } else if (actionType === 'delete_user') {
+                title.innerText = "注销/删除用户";
+                message.innerText = `确定对用户 [${escapeHTML(param2)}] 进行物理除名？删除后其不可再以此密码登录。`;
+                confirmSuccessCallback = async () => {
+                    const res = await supabaseRequest(`qx_users?id=eq.${param1}`, { method: "DELETE" });
+                    if(res) {
+                        showToast(`已成功将用户 [${escapeHTML(param2)}] 物理除名`);
+                        syncCoreData();
+                    }
+                };
+            } else if (actionType === 'delete_group') {
+                title.innerText = "解散此群聊";
+                message.innerText = "您确定要强制永久解散这个群组聊天空间吗？";
+                confirmSuccessCallback = async () => {
+                    const res = await supabaseRequest(`qx_groups?id=eq.${param1}`, { method: "DELETE" });
+                    if(res) {
+                        showToast("群组已物理强制解散");
+                        syncCoreData();
+                    }
+                };
+            } else if (actionType === 'delete_message') {
+                title.innerText = "撤销消息内容";
+                message.innerText = "您确定要以最高管理员身份物理撤回这条群成员消息吗？";
+                confirmSuccessCallback = async () => {
+                    const res = await supabaseRequest(`qx_messages?id=eq.${param1}`, { method: "DELETE" });
+                    if(res) {
+                        showToast("消息物理记录已撤销擦除");
+                        syncCoreData();
+                    }
+                };
+            } else if (actionType === 'force_prune') {
+                title.innerText = "云存储物理裁剪";
+                message.innerText = "您即将手动启动强效裁剪，将当前公共聊天裁剪保留最新 1000 条，私信保留最新 400 条。确认执行吗？";
+                confirmSuccessCallback = async () => {
+                    showToast("正在后台强制执行裁剪...");
+                    await enforceChannelPruning(null, null);
+                    for (let g of groups) {
+                        await enforceChannelPruning(g.id, null);
+                    }
+                    showToast("系统云储存裁剪压缩优化完成！");
+                };
+            } else if (actionType === 'force_reset') {
+                title.innerText = "⚠️ 气化全站数据库";
+                message.innerText = "这是一个极度危险的操作！您即将从云服务器上物理抹除「所有」成员的消息记录！需要进行高级口令验证。";
+                secretContainer.classList.remove('hidden');
+                const confirmSecretLabelEl = document.getElementById('confirmSecretLabel');
+                if (confirmSecretLabelEl) confirmSecretLabelEl.innerText = "输入口令：FORCE DELETE ALL";
+                confirmSuccessCallback = async () => {
+                    const typed = secretInput.value.trim();
+                    if (typed !== "FORCE DELETE ALL") {
+                        showToast("防错口令不匹配，操作已安全解雇", "error");
+                        return;
+                    }
+                    const res = await supabaseRequest("qx_messages", { method: "DELETE" });
+                    showToast("全站聊天消息已物理彻底气化归零");
+                    syncCoreData();
+                };
+            } else if (actionType === 'delete_nav') {
+                title.innerText = "删除快捷导航";
+                message.innerText = "确认下架并永久删除此分类下的快捷网址导航通路吗？";
+                confirmSuccessCallback = async () => {
+                    const res = await supabaseRequest(`qx_navigation?id=eq.${param1}`, { method: "DELETE" });
+                    if(res) {
+                        showToast("导航已成功下架移除");
+                        syncCoreData();
+                    }
+                };
+            }
+
+            executeBtn.onclick = () => {
+                if (confirmSuccessCallback) confirmSuccessCallback();
+                closeConfirmModal();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            const modalConfirmEl = document.getElementById('modalConfirm');
+            if (modalConfirmEl) modalConfirmEl.classList.add('hidden');
+            confirmSuccessCallback = null;
+        }
+
+        // ==================== 7. 消息发送与存储控制 ====================
+        async function handleSendMessage(e) {
+            if(e) e.preventDefault();
+            const input = document.getElementById('messageInput');
+            if (!input) return;
+            const content = input.value.trim();
+
+            if (!content) return;
+
+            input.value = '';
+            input.style.height = 'auto';
+
+            await performMessagePost(content, false);
+        }
+
+        async function performMessagePost(rawContent, isImage = false) {
+            let groupId = null;
+            let receiverId = null;
+
+            if (selectedSessionId.startsWith('group_')) {
+                groupId = selectedSessionId.replace('group_', '');
+            } else if (selectedSessionId.startsWith('dm_')) {
+                receiverId = selectedSessionId.replace('dm_', '');
+            }
+
+            const newMsg = {
+                sender_id: currentUser.id,
+                sender_name: currentUser.username,
+                content: rawContent,
+                is_image: isImage,
+                group_id: groupId ? parseInt(groupId) : null,
+                receiver_id: receiverId ? parseInt(receiverId) : null,
+                created_at: new Date().toISOString()
+            };
+
+            const response = await supabaseRequest("qx_messages", {
+                method: "POST",
+                body: JSON.stringify(newMsg)
+            });
+
+            if (response) {
+                if(!messages.find(m => m.id === response[0].id)) {
+                    messages.push(response[0]);
+                }
+                renderMessagesStream();
+                enforceChannelPruning(groupId, receiverId);
+            }
+        }
+
+        async function enforceChannelPruning(groupId, receiverId) {
+            let scopeUrl = "qx_messages?";
+            let targetLimit = MSG_LIMIT_PUBLIC;
+
+            if (groupId) {
+                scopeUrl += `group_id=eq.${groupId}`;
+            } else if (receiverId) {
+                scopeUrl += `or=(and(sender_id.eq.${currentUser.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUser.id}))`;
+                targetLimit = MSG_LIMIT_DM;
+            } else {
+                scopeUrl += `group_id=is.null&receiver_id=is.null`;
+            }
+
+            const currentItems = await supabaseRequest(`${scopeUrl}&order=created_at.desc`, { method: "GET" });
+            if (currentItems && currentItems.length > targetLimit) {
+                const toDelete = currentItems.slice(targetLimit);
+                for (let delMsg of toDelete) {
+                    await supabaseRequest(`qx_messages?id=eq.${delMsg.id}`, { method: "DELETE" });
+                }
+            }
+        }
+
+        // ==================== 8. 10 大功能托盘逻辑 ====================
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.contains('dark');
+            const themeIcon = document.getElementById('themeIcon');
+            if (themeIcon) {
+                if (isDark) {
+                    document.documentElement.classList.remove('dark');
+                    themeIcon.setAttribute('data-lucide', 'sun');
+                    showToast("已切换到 Apple 纯净白日光模式");
+                } else {
+                    document.documentElement.classList.add('dark');
+                    themeIcon.setAttribute('data-lucide', 'moon');
+                    showToast("已启用尊贵 iMessage 墨黑夜色");
+                }
+            }
+            lucide.createIcons();
+        }
+
+        // 音效辅助器
+        function toggleAudio() {
+            audioNotificationEnabled = !audioNotificationEnabled;
+            localStorage.setItem('qx_sound_enabled', audioNotificationEnabled);
+            updateSoundUI();
+            if(audioNotificationEnabled) {
+                playIncomingAudio();
+                showToast("iMessage 来信提示铃声已开启");
+            } else {
+                showToast("音效已静音，回归绝对极简");
+            }
+        }
+        
+        function updateSoundUI() {
+            const icon = document.getElementById('soundIcon');
+            const txt = document.getElementById('soundText');
+            if (icon && txt) {
+                if(audioNotificationEnabled) {
+                    icon.setAttribute('data-lucide', 'volume-2');
+                    txt.innerText = "来信音效: 开启";
+                } else {
+                    icon.setAttribute('data-lucide', 'volume-x');
+                    txt.innerText = "来信音效: 禁用";
+                }
+            }
+            lucide.createIcons();
+        }
+
+        // 音效播放
+        function playIncomingAudio() {
+            if (!audioNotificationEnabled) return;
+            const audio = document.getElementById('imessageAudio');
+            if (audio) {
+                audio.currentTime = 0;
+                audio.play().catch(() => {});
+            }
+        }
+
+        function toggleZenMode() {
+            isZenMode = !isZenMode;
+            const sidebar = document.querySelector('section#page-chat > div:first-child');
+            const chatArea = document.getElementById('chatArea');
+            const zenBtn = document.getElementById('zenBtn');
+
+            if (sidebar && chatArea && zenBtn) {
+                if (isZenMode) {
+                    sidebar.className = "hidden";
+                    chatArea.className = "lg:col-span-12 flex flex-col h-[700px] liquid-glass rounded-[24px] overflow-hidden border border-white/50 dark:border-white/10 shadow-apple transition-all duration-500";
+                    zenBtn.innerHTML = `<i data-lucide="eye" class="w-3.5 h-3.5"></i> 退出专注`;
+                    showToast("已开启 Apple 推荐的无界专注对话视域");
+                } else {
+                    sidebar.className = "lg:col-span-4 flex flex-col space-y-4 transition-all duration-500";
+                    chatArea.className = "lg:col-span-8 flex flex-col h-[700px] liquid-glass rounded-[24px] overflow-hidden border border-white/50 dark:border-white/10 shadow-apple transition-all duration-500";
+                    zenBtn.innerHTML = `<i data-lucide="eye-off" class="w-3.5 h-3.5"></i> 专注模式`;
+                    showToast("退出专注模式，侧边会话已显现");
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function showChatStats() {
+            const count = messages.filter(m => String(m.sender_id) === String(currentUser.id)).length;
+            const publicCount = messages.filter(m => String(m.sender_id) === String(currentUser.id) && !m.receiver_id).length;
+            
+            const statsHtml = `
+                <div class="space-y-3 text-left">
+                    <p class="text-xs">您的总聊天活跃消息数: <span class="font-bold text-blue-500">${count} 条</span></p>
+                    <p class="text-xs">其中，公共群聊大厅消息: <span class="font-bold text-indigo-500">${publicCount} 条</span></p>
+                    <p class="text-xs">私信交互次数: <span class="font-bold text-purple-500">${count - publicCount} 次</span></p>
+                    <p class="text-[10px] text-gray-400 mt-2">这些数据保存在您的本地进程中，保证您完美的独立性。</p>
+                </div>
+            `;
+            
+            const container = document.getElementById('announcementContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="p-4 bg-white/40 dark:bg-zinc-900 rounded-2xl border border-blue-500/10 shadow-sm mb-2">
+                        <h4 class="font-bold text-sm text-blue-500 mb-2">📊 您的 Qx's Chat 专属活跃简报</h4>
+                        ${statsHtml}
+                    </div>
+                `;
+            }
+            
+            const modal = document.getElementById('modalAnnouncements');
+            if (modal) modal.className = "fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4";
+        }
+
+        async function testPingSpeed() {
+            const pingSpeedTextEl = document.getElementById('pingSpeedText');
+            if (pingSpeedTextEl) pingSpeedTextEl.innerText = "正在握手...";
+            try {
+                await supabaseRequest("qx_users?limit=1", { method: "GET" });
+                const end = Date.now();
+                const diff = end - start;
+                if (pingSpeedTextEl) pingSpeedTextEl.innerText = `网络延迟: ${diff}ms`;
+                showToast(`与 Supabase 数据源延迟仅 ${diff}ms，丝滑响应`);
+            } catch {
+                if (pingSpeedTextEl) pingSpeedTextEl.innerText = "握手不畅";
+            }
+        }
+
+        function toggleScratchpad() {
+            const pad = document.getElementById('scratchpadArea');
+            const scratchpadContentEl = document.getElementById('scratchpadContent');
+            if (pad) {
+                if (pad.classList.contains('hidden')) {
+                    pad.classList.remove('hidden');
+                    if (scratchpadContentEl) scratchpadContentEl.focus();
+                } else {
+                    pad.classList.add('hidden');
+                }
+            }
+        }
+
+        function saveScratchpad() {
+            const scratchpadContentEl = document.getElementById('scratchpadContent');
+            if (scratchpadContentEl) {
+                const val = scratchpadContentEl.value;
+                localStorage.setItem('qx_scratchpad', val);
+            }
+        }
+
+        function toggleChatSearch() {
+            const bar = document.getElementById('chatSearchBox');
+            const chatSearchInputEl = document.getElementById('chatSearchInput');
+            if (bar) {
+                if (bar.classList.contains('hidden')) {
+                    bar.classList.remove('hidden');
+                    if (chatSearchInputEl) chatSearchInputEl.focus();
+                } else {
+                    bar.classList.add('hidden');
+                    searchKeyword = '';
+                    renderMessagesStream();
+                }
+            }
+        }
+
+        function handleChatSearch() {
+            const chatSearchInputEl = document.getElementById('chatSearchInput');
+            if (chatSearchInputEl) {
+                searchKeyword = chatSearchInputEl.value.toLowerCase().trim();
+            }
+            renderMessagesStream();
+        }
+
+        function toggleEmojiPicker() {
+            const el = document.getElementById('emojiPicker');
+            if (el) el.classList.toggle('hidden');
+        }
+
+        // 插入 Emoji 字符并聚焦
+        function insertEmoji(emoji) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value += emoji;
+                toggleEmojiPicker();
+                input.focus();
+            }
+        }
+
+        function insertQuickMessage(text) {
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.value = text;
+                input.focus();
+            }
+        }
+
+        // ==================== 9. 图片发送模态控制 ====================
+        function openImageModal() {
+            const modalSendImageEl = document.getElementById('modalSendImage');
+            if (modalSendImageEl) modalSendImageEl.classList.remove('hidden');
+        }
+        function closeImageModal() {
+            const modalSendImageEl = document.getElementById('modalSendImage');
+            if (modalSendImageEl) modalSendImageEl.classList.add('hidden');
+            cancelFilePreview();
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    const max_size = 500;
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.65);
+                    
+                    const compressedPreviewEl = document.getElementById('compressedPreview');
+                    const imagePreviewContainerEl = document.getElementById('imagePreviewContainer');
+                    const dragAreaEl = document.getElementById('dragArea');
+
+                    if (compressedPreviewEl) compressedPreviewEl.src = compressedDataUrl;
+                    if (imagePreviewContainerEl) imagePreviewContainerEl.classList.remove('hidden');
+                    if (dragAreaEl) dragAreaEl.classList.add('hidden');
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function cancelFilePreview() {
+            const imageFileInputEl = document.getElementById('imageFileInput');
+            const compressedPreviewEl = document.getElementById('compressedPreview');
+            const imagePreviewContainerEl = document.getElementById('imagePreviewContainer');
+            const dragAreaEl = document.getElementById('dragArea');
+            const imageUrlInputEl = document.getElementById('imageUrlInput');
+
+            if (imageFileInputEl) imageFileInputEl.value = '';
+            if (compressedPreviewEl) compressedPreviewEl.src = '';
+            if (imagePreviewContainerEl) imagePreviewContainerEl.classList.add('hidden');
+            if (dragAreaEl) dragAreaEl.classList.remove('hidden');
+            if (imageUrlInputEl) imageUrlInputEl.value = '';
+        }
+
+        async function sendPreparedImage() {
+            const imageUrlInputEl = document.getElementById('imageUrlInput');
+            const compressedPreviewEl = document.getElementById('compressedPreview');
+
+            const urlInput = imageUrlInputEl ? imageUrlInputEl.value.trim() : "";
+            const compressedSrc = compressedPreviewEl ? compressedPreviewEl.src : "";
+
+            let finalImageSrc = "";
+            if (urlInput) {
+                if(!isValidURL(urlInput)) {
+                    showToast("网络图片 URL 格式不合法或含有不安全伪协议", "error");
+                    return;
+                }
+                finalImageSrc = urlInput;
+            } else if (compressedSrc) {
+                finalImageSrc = compressedSrc;
+            } else {
+                showToast("请填入 URL 链接或选择一张图片", "error");
+                return;
+            }
+
+            closeImageModal();
+            showToast("正在上传压缩格式图片...");
+            await performMessagePost(finalImageSrc, true);
+        }
+
+        // ==================== 10. 创建群聊申请模态 ====================
+        function openApplyGroupModal() {
+            const modalApplyGroupEl = document.getElementById('modalApplyGroup');
+            if (modalApplyGroupEl) modalApplyGroupEl.classList.remove('hidden');
+        }
+        function closeApplyGroupModal() {
+            const modalApplyGroupEl = document.getElementById('modalApplyGroup');
+            const groupNameInputEl = document.getElementById('groupNameInput');
+            const groupDescInputEl = document.getElementById('groupDescInput');
+
+            if (modalApplyGroupEl) modalApplyGroupEl.classList.add('hidden');
+            if (groupNameInputEl) groupNameInputEl.value = '';
+            if (groupDescInputEl) groupDescInputEl.value = '';
+        }
+        async function submitGroupApplication() {
+            const groupNameInputEl = document.getElementById('groupNameInput');
+            const groupDescInputEl = document.getElementById('groupDescInput');
+
+            const name = groupNameInputEl ? groupNameInputEl.value.trim() : "";
+            const desc = groupDescInputEl ? groupDescInputEl.value.trim() : "";
+
+            if (!name) {
+                showToast("请输入群组名称", "error");
+                return;
+            }
+
+            const newGroup = {
+                name: name,
+                description: desc || "无群组介绍",
+                creator_name: currentUser.username,
+                is_approved: currentUser.role === 'admin' ? true : false, 
+                created_at: new Date().toISOString()
+            };
+
+            const result = await supabaseRequest("qx_groups", {
+                method: "POST",
+                body: JSON.stringify(newGroup)
+            });
+
+            if(result) {
+                closeApplyGroupModal();
+                if (currentUser.role === 'admin') {
+                    showToast("您已建立免审批群组！");
+                } else {
+                    showToast("申请提请成功！请等待管理员 qxii2026 批准");
+                }
+                syncCoreData();
+            }
+        }
+
+        // ==================== 11. 自定义头像底层算法 ====================
+        function openEditAvatarModal() {
+            const modalEditAvatarEl = document.getElementById('modalEditAvatar');
+            const customAvatarUrlInputEl = document.getElementById('customAvatarUrlInput');
+            const avatarPreviewCircleEl = document.getElementById('avatarPreviewCircle');
+
+            if (modalEditAvatarEl) modalEditAvatarEl.classList.remove('hidden');
+            tempSelectedAvatarData = currentUser.avatar_url || "";
+            if (customAvatarUrlInputEl) {
+                customAvatarUrlInputEl.value = tempSelectedAvatarData.startsWith("emoji:") || tempSelectedAvatarData.startsWith("data:") ? "" : tempSelectedAvatarData;
+            }
+            if (avatarPreviewCircleEl) {
+                renderAvatarElement(avatarPreviewCircleEl, tempSelectedAvatarData, currentUser.username.substring(0, 2));
+            }
+        }
+
+        function closeEditAvatarModal() {
+            const modalEditAvatarEl = document.getElementById('modalEditAvatar');
+            const avatarFileInputEl = document.getElementById('avatarFileInput');
+
+            if (modalEditAvatarEl) modalEditAvatarEl.classList.add('hidden');
+            if (avatarFileInputEl) avatarFileInputEl.value = "";
+        }
+
+        function selectPresetAvatar(item) {
+            tempSelectedAvatarData = `emoji:${item.emoji}|${item.bg}`;
+            const avatarPreviewCircleEl = document.getElementById('avatarPreviewCircle');
+            const customAvatarUrlInputEl = document.getElementById('customAvatarUrlInput');
+
+            if (avatarPreviewCircleEl) {
+                renderAvatarElement(avatarPreviewCircleEl, tempSelectedAvatarData, currentUser.username.substring(0, 2));
+            }
+            if (customAvatarUrlInputEl) customAvatarUrlInputEl.value = ""; 
+        }
+
+        // 异步本地图像压缩转为微型 5KB 规格
+        function handleAvatarFileSelected(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+
+                    const max_size = 120; 
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6); 
+                    
+                    tempSelectedAvatarData = compressedBase64;
+                    const avatarPreviewCircleEl = document.getElementById('avatarPreviewCircle');
+                    const customAvatarUrlInputEl = document.getElementById('customAvatarUrlInput');
+
+                    if (avatarPreviewCircleEl) {
+                        renderAvatarElement(avatarPreviewCircleEl, tempSelectedAvatarData, currentUser.username.substring(0, 2));
+                    }
+                    if (customAvatarUrlInputEl) customAvatarUrlInputEl.value = ""; 
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        async function saveCustomAvatar() {
+            const customAvatarUrlInputEl = document.getElementById('customAvatarUrlInput');
+            const manualUrl = customAvatarUrlInputEl ? customAvatarUrlInputEl.value.trim() : "";
+            if (manualUrl !== "") {
+                if(!isValidURL(manualUrl)) {
+                    showToast("头像网络 URL 格式不合法或含有不安全伪协议", "error");
+                    return;
+                }
+                tempSelectedAvatarData = manualUrl;
+            }
+
+            const res = await supabaseRequest(`qx_users?id=eq.${currentUser.id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ avatar_url: tempSelectedAvatarData })
+            });
+
+            if (res) {
+                currentUser.avatar_url = tempSelectedAvatarData;
+                localStorage.setItem('qx_current_user', JSON.stringify(currentUser));
+                updateUserBadge();
+                closeEditAvatarModal();
+                showToast("您的 iMessage 专属头像已经同步至云端！");
+                syncCoreData();
+            } else {
+                showToast("网络通信有抖动，请稍后重试", "error");
+            }
+        }
+
+        // ==================== 12. 网页导航动态维护逻辑（高阶 Admin 新增 Edit 功能） ====================
+        function renderNavigation() {
+            const container = document.getElementById('navCategories');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const categories = {};
+            navigationItems.forEach(item => {
+                if (!categories[item.category]) {
+                    categories[item.category] = [];
+                }
+                categories[item.category].push(item);
+            });
+
+            const keys = Object.keys(categories);
+            if(keys.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-gray-400 text-xs select-none">
+                        目前导航尚未录入任何快捷通路。
+                    </div>
+                `;
+                return;
+            }
+
+            keys.forEach(cat => {
+                const section = document.createElement('div');
+                section.className = "space-y-4 animate-in fade-in duration-500";
+                
+                let groupItemsHtml = "";
+                categories[cat].forEach(item => {
+                    let adminControls = "";
+                    if (currentUser && currentUser.role === 'admin') {
+                        adminControls = `
+                            <div class="absolute top-2 right-2 flex space-x-1">
+                                <button onclick="startEditNavigation('${item.id}', '${encodeURIComponent(item.name)}', '${encodeURIComponent(item.url)}', '${encodeURIComponent(item.category)}')" class="text-blue-500 hover:text-blue-600 transition-colors p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="编辑修改">
+                                    <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                                </button>
+                                <button onclick="triggerSecureAction('delete_nav', '${item.id}')" class="text-rose-500 hover:text-rose-600 transition-colors p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10" title="下架删除">
+                                    <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    const safeName = escapeHTML(item.name);
+                    const safeUrl = escapeHTML(item.url);
+
+                    groupItemsHtml += `
+                        <div class="relative bg-white dark:bg-zinc-900 border border-black/5 dark:border-white/5 p-5 rounded-[24px] hover:shadow-apple-hover hover:-translate-y-1 transition-all duration-300">
+                            ${adminControls}
+                            <h4 class="font-bold text-sm text-apple-gray dark:text-white mb-1.5 flex items-center gap-1.5 pr-14">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                ${safeName}
+                            </h4>
+                            <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate mb-3 select-none">${safeUrl}</p>
+                            <a href="${safeUrl}" target="_blank" class="text-xs text-[#0071E3] dark:text-blue-400 font-bold hover:underline inline-flex items-center gap-1">
+                                立即前往 <i data-lucide="arrow-up-right" class="w-3 h-3"></i>
+                            </a>
+                        </div>
+                    `;
+                });
+
+                section.innerHTML = `
+                    <h3 class="font-extrabold text-sm text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2 select-none">${escapeHTML(cat)}</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        ${groupItemsHtml}
+                    </div>
+                `;
+                container.appendChild(section);
+            });
+
+            lucide.createIcons();
+        }
+
+        function startEditNavigation(id, encName, encUrl, encCat) {
+            editingNavId = id;
+            
+            const name = decodeURIComponent(encName);
+            const url = decodeURIComponent(encUrl);
+            const cat = decodeURIComponent(encCat);
+
+            const addNavNameEl = document.getElementById('addNavName');
+            const addNavUrlEl = document.getElementById('addNavUrl');
+            const addNavCatEl = document.getElementById('addNavCat');
+            const navEditorTitleEl = document.getElementById('navEditorTitle');
+            const saveNavBtnEl = document.getElementById('saveNavBtn');
+            const cancelNavEditBtnEl = document.getElementById('cancelNavEditBtn');
+            const adminNavEditorEl = document.getElementById('adminNavEditor');
+
+            if (addNavNameEl) addNavNameEl.value = name;
+            if (addNavUrlEl) addNavUrlEl.value = url;
+            if (addNavCatEl) addNavCatEl.value = cat;
+
+            if (navEditorTitleEl) navEditorTitleEl.innerText = "管理员高级操作：正在修改导航通路";
+            if (saveNavBtnEl) saveNavBtnEl.innerText = "保存更改";
+            if (cancelNavEditBtnEl) cancelNavEditBtnEl.classList.remove('hidden');
+
+            if (adminNavEditorEl) adminNavEditorEl.scrollIntoView({ behavior: 'smooth' });
+            if (addNavNameEl) addNavNameEl.focus();
+        }
+
+        function resetNavEditor() {
+            editingNavId = null;
+            const addNavNameEl = document.getElementById('addNavName');
+            const addNavUrlEl = document.getElementById('addNavUrl');
+            const addNavCatEl = document.getElementById('addNavCat');
+            const navEditorTitleEl = document.getElementById('navEditorTitle');
+            const saveNavBtnEl = document.getElementById('saveNavBtn');
+            const cancelNavEditBtnEl = document.getElementById('cancelNavEditBtn');
+
+            if (addNavNameEl) addNavNameEl.value = '';
+            if (addNavUrlEl) addNavUrlEl.value = '';
+            if (addNavCatEl) addNavCatEl.value = '';
+
+            if (navEditorTitleEl) navEditorTitleEl.innerText = "管理员高级操作：在此添加本站专用导航";
+            if (saveNavBtnEl) saveNavBtnEl.innerText = "快速录入";
+            if (cancelNavEditBtnEl) cancelNavEditBtnEl.classList.add('hidden');
+        }
+
+        async function saveNavigationItem() {
+            const addNavNameEl = document.getElementById('addNavName');
+            const addNavUrlEl = document.getElementById('addNavUrl');
+            const addNavCatEl = document.getElementById('addNavCat');
+
+            const name = addNavNameEl ? addNavNameEl.value.trim() : "";
+            let url = addNavUrlEl ? addNavUrlEl.value.trim() : "";
+            const category = (addNavCatEl && addNavCatEl.value.trim()) || "极简生产力";
+
+            if (!name || !url) {
+                showToast("导航名称与 URL 路径不能为空", "error");
+                return;
+            }
+
+            // 安全自适应：如果输入中缺少 http:// 或 https://，自动安全前缀，提升管理员交互流畅度
+            if (url && !/^https?:\/\//i.test(url)) {
+                url = "http://" + url;
+            }
+
+            if(!isValidURL(url)) {
+                showToast("导航 URL 链接格式不合法或含有安全风险", "error");
+                return;
+            }
+
+            const navPayload = {
+                name: name,
+                url: url,
+                category: category,
+                created_at: new Date().toISOString()
+            };
+
+            if (editingNavId) {
+                const res = await supabaseRequest(`qx_navigation?id=eq.${editingNavId}`, {
+                    method: "PATCH",
+                    body: JSON.stringify(navPayload)
+                });
+                if (res) {
+                    showToast("快捷导航修改更新成功！");
+                    resetNavEditor();
+                    syncCoreData();
+                }
+            } else {
+                const res = await supabaseRequest("qx_navigation", {
+                    method: "POST",
+                    body: JSON.stringify(navPayload)
+                });
+                if (res) {
+                    showToast("快捷导航录入完成！");
+                    resetNavEditor();
+                    syncCoreData();
+                }
+            }
+        }
+
+
+        // ==================== 13. 管理员后台管理逻辑 ====================
+        function verifyAdminPassword() {
+            const adminPwdInputEl = document.getElementById('adminPwdInput');
+            const input = adminPwdInputEl ? adminPwdInputEl.value.trim() : "";
+            if (input === 'qxii2026') {
+                activeAdminLocked = false;
+                const adminAuthLockEl = document.getElementById('adminAuthLock');
+                const adminPanelEl = document.getElementById('adminPanel');
+
+                if (adminAuthLockEl) adminAuthLockEl.className = "hidden";
+                if (adminPanelEl) adminPanelEl.className = "space-y-8 animate-in fade-in zoom-in duration-500";
+                showToast("最高治理面板解锁。您已拥有修改删除一切的最高决策权");
+                syncCoreData();
+            } else {
+                showToast("解锁口令错误！您无权进入控制大楼", "error");
+            }
+        }
+
+        function exitAdminMode() {
+            activeAdminLocked = true;
+            const adminPwdInputEl = document.getElementById('adminPwdInput');
+            const adminAuthLockEl = document.getElementById('adminAuthLock');
+            const adminPanelEl = document.getElementById('adminPanel');
+
+            if (adminPwdInputEl) adminPwdInputEl.value = '';
+            if (adminAuthLockEl) adminAuthLockEl.className = "max-w-md mx-auto p-8 liquid-glass rounded-[32px] text-center border border-amber-500/15";
+            if (adminPanelEl) adminPanelEl.className = "hidden";
+            showToast("治理面板已安全锁定");
+        }
+
+        function setAdminSubTab(tab) {
+            currentAdminTab = tab;
+            const subTabs = ['users', 'groups', 'system'];
+            subTabs.forEach(t => {
+                const el = document.getElementById(`sub-admin-${t}`);
+                const navBtn = document.getElementById(`ast-${t}`);
+                if (el && navBtn) {
+                    if(t === tab) {
+                        el.classList.remove('hidden');
+                        navBtn.className = "px-4 py-2 text-xs font-semibold bg-amber-500 text-white rounded-xl shadow-sm transition-all";
+                    } else {
+                        el.classList.add('hidden');
+                        navBtn.className = "px-4 py-2 text-xs font-semibold text-gray-500 dark:text-zinc-400 rounded-xl transition-all";
+                    }
+                }
+            });
+        }
+
+        function renderAdminTableUsers() {
+            const tbody = document.getElementById('adminUserTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            const adminUserCountTextEl = document.getElementById('adminUserCountText');
+            if (adminUserCountTextEl) adminUserCountTextEl.innerText = `${users.length} 个活跃席位`;
+
+            users.forEach(u => {
+                const isSelf = u.id === currentUser.id;
+                const row = document.createElement('tr');
+                row.className = "border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors";
+                
+                let actionBtn = `
+                    <button onclick="triggerSecureAction('delete_user', '${u.id}', '${escapeHTML(u.username)}')" class="px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded hover:bg-rose-500 hover:text-white transition-all">
+                        删除销户
+                    </button>
+                `;
+                if(isSelf) {
+                    actionBtn = `<span class="text-gray-400">（您当前登录的账户）</span>`;
+                }
+
+                row.innerHTML = `
+                    <td class="py-3 px-2 text-gray-400 truncate max-w-[80px]">${u.id}</td>
+                    <td class="py-3 px-2 font-bold">${escapeHTML(u.username)}</td>
+                    <td class="py-3 px-2 font-mono text-gray-400">${escapeHTML(u.password)}</td>
+                    <td class="py-3 px-2 text-gray-400">${u.created_at ? new Date(u.created_at).toLocaleDateString() : '未知'}</td>
+                    <td class="py-3 px-2 text-right">${actionBtn}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderAdminTableGroups() {
+            const tbody = document.getElementById('adminGroupTableBody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const pending = groups.filter(g => !g.is_approved);
+            const adminPendingGroupTextEl = document.getElementById('adminPendingGroupText');
+            if (adminPendingGroupTextEl) adminPendingGroupTextEl.innerText = `${pending.length} 项建群申请待决`;
+
+            groups.forEach(g => {
+                const row = document.createElement('tr');
+                row.className = "border-b border-black/5 dark:border-white/5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors";
+                
+                let statusBadge = `<span class="text-xs bg-emerald-500/10 text-emerald-500 font-bold px-2 py-0.5 rounded-full">已批准运行</span>`;
+                let actionBtns = `
+                    <button onclick="triggerSecureAction('delete_group', '${g.id}')" class="px-2.5 py-1 bg-rose-500/10 text-rose-500 rounded hover:bg-rose-500 hover:text-white transition-all text-[11px]">
+                        解散群组
+                    </button>
+                `;
+
+                if(!g.is_approved) {
+                    statusBadge = `<span class="text-xs bg-amber-500/10 text-amber-500 font-bold px-2 py-0.5 rounded-full">待审批申请</span>`;
+                    actionBtns = `
+                        <button onclick="adminApproveGroup('${g.id}')" class="px-2.5 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 transition-all text-[11px] font-bold mr-1">
+                            批准通过
+                        </button>
+                        <button onclick="triggerSecureAction('delete_group', '${g.id}')" class="px-2.5 py-1 bg-zinc-500/10 text-gray-500 rounded hover:bg-gray-500 hover:text-white transition-all text-[11px]">
+                            拒绝驳回
+                        </button>
+                    `;
+                }
+
+                row.innerHTML = `
+                    <td class="py-3 px-2 font-bold">${escapeHTML(g.name)}</td>
+                    <td class="py-3 px-2 text-gray-500">${escapeHTML(g.creator_name)}</td>
+                    <td class="py-3 px-2 text-gray-400 truncate max-w-[150px]">${escapeHTML(g.description)}</td>
+                    <td class="py-3 px-2">${statusBadge}</td>
+                    <td class="py-3 px-2 text-right">${actionBtns}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function adminApproveGroup(id) {
+            const res = await supabaseRequest(`qx_groups?id=eq.${id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ is_approved: true })
+            });
+            if(res) {
+                showToast("新群组申请成功批准！");
+                syncCoreData();
+            }
+        }
+
+        async function publishAnnouncement() {
+            const adminAnnounceTextEl = document.getElementById('adminAnnounceText');
+            const syncToBannerEl = document.getElementById('syncToBanner');
+
+            const text = adminAnnounceTextEl ? adminAnnounceTextEl.value.trim() : "";
+            const syncBanner = syncToBannerEl ? syncToBannerEl.checked : false;
+
+            if(!text) {
+                showToast("公告文字不能为空", "error");
+                return;
+            }
+
+            const newAnn = {
+                content: text,
+                author: currentUser.username,
+                created_at: new Date().toISOString()
+            };
+
+            const res = await supabaseRequest("qx_announcements", {
+                method: "POST",
+                body: JSON.stringify(newAnn)
+            });
+
+            if (res) {
+                showToast("全新广播公告发布成功！");
+                if (adminAnnounceTextEl) adminAnnounceTextEl.value = '';
+                if(syncBanner) {
+                    const bannerTextEl = document.getElementById('bannerText');
+                    if (bannerTextEl) bannerTextEl.innerText = text;
+                }
+                syncCoreData();
+                openAnnouncements();
+            }
+        }
+
+        async function editMessageAdmin(id, oldContentEncoded) {
+            const oldContent = decodeURIComponent(oldContentEncoded);
+            const newContent = prompt("【管理员最高决策】请输入您想要修改后的消息内容：", oldContent);
+            if(newContent === null || newContent.trim() === oldContent) return;
+
+            const res = await supabaseRequest(`qx_messages?id=eq.${id}`, {
+                method: "PATCH",
+                body: JSON.stringify({ content: newContent.trim() })
+            });
+
+            if (res) {
+                showToast("该消息的物理内容已被最高治理员更正");
+                syncCoreData();
+            }
+        }
+
+        // ==================== 14. 公告大喇叭弹窗控制 ====================
+        function openAnnouncements() {
+            const modal = document.getElementById('modalAnnouncements');
+            const container = document.getElementById('announcementContainer');
+            
+            if (!container) return;
+            container.innerHTML = '';
+            if(announcements.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">暂无最新公告</div>`;
+            } else {
+                announcements.forEach(ann => {
+                    const box = document.createElement('div');
+                    box.className = "p-4 bg-black/5 dark:bg-white/5 rounded-2xl border border-black/5 dark:border-white/5 text-xs animate-in fade-in slide-in-from-bottom-2 duration-300";
+                    box.innerHTML = `
+                        <div class="flex items-center justify-between mb-1 text-gray-400">
+                            <span class="font-bold">发布人: ${escapeHTML(ann.author)}</span>
+                            <span>${new Date(ann.created_at).toLocaleString()}</span>
+                        </div>
+                        <p class="text-apple-gray dark:text-zinc-200 leading-relaxed font-medium">${escapeHTML(ann.content)}</p>
+                    `;
+                    container.appendChild(box);
+                });
+            }
+
+            if (modal) modal.className = "fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4";
+        }
+
+        function closeAnnouncements() {
+            const modalAnnouncementsEl = document.getElementById('modalAnnouncements');
+            if (modalAnnouncementsEl) modalAnnouncementsEl.className = "hidden";
+        }
+
+        // ==================== 15. 页面框架切换过渡与辅助 ====================
+        function switchTab(tabId) {
+            currentTab = tabId;
+            if (!currentUser && tabId !== 'auth') {
+                tabId = 'auth';
+                currentTab = 'auth';
+            }
+
+            const navs = ['chat', 'nav', 'admin'];
+            navs.forEach(n => {
+                const el = document.getElementById(`nav-${n}`);
+                if (el) {
+                    if (n === tabId) {
+                        el.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-apple-blue bg-white/80 dark:bg-zinc-800 shadow-sm transition-all duration-300";
+                    } else {
+                        el.className = "px-4 py-1.5 rounded-full text-xs font-semibold text-gray-500 hover:text-apple-gray dark:hover:text-white transition-all duration-300";
+                    }
+                }
+            });
+
+            const sections = ['auth', 'chat', 'nav', 'admin'];
+            sections.forEach(s => {
+                const el = document.getElementById(`page-${s}`);
+                if (el) {
+                    if (s === tabId) {
+                        el.classList.remove('hidden');
+                        el.classList.add('fade-enter');
+                        setTimeout(() => {
+                            el.classList.remove('fade-enter');
+                        }, 500);
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                }
+            });
+
+            if (tabId === 'chat') {
+                scrollChatToBottom();
+            }
+        }
+
+        function dismissBanner() {
+            const topBannerEl = document.getElementById('topBanner');
+            if (topBannerEl) topBannerEl.className = "hidden";
+        }
+
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            // 安全防护：防范 DOM 容器尚未挂载时的强制访问
+            if (!toast || !toastMsg || !toastIcon) return;
+
+            toastMsg.innerText = msg;
+            
+            if(type === 'error') {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = "w-4.5 h-4.5 text-rose-500 animate-bounce";
+            } else {
+                toastIcon.setAttribute('data-lucide', 'check-circle2');
+                toastIcon.className = "w-4.5 h-4.5 text-emerald-500 animate-bounce";
+            }
+            lucide.createIcons();
+
+            toast.className = "fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 liquid-glass rounded-2xl px-5 py-3 border border-emerald-500/20 shadow-apple flex items-center space-x-2";
+            
+            setTimeout(() => {
+                // 安全异步延时检查
+                const toastCheck = document.getElementById('toast');
+                if (toastCheck) {
+                    toastCheck.className = "fixed bottom-6 right-6 z-50 transform translate-y-12 opacity-0 transition-all duration-300 liquid-glass rounded-2xl px-5 py-3 border border-emerald-500/20 shadow-md flex items-center space-x-2 pointer-events-none";
+                }
+            }, 2800);
+        }
+    </script>
+</body>
+</html>
